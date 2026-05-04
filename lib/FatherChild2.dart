@@ -12,6 +12,7 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
+// 父组件
 class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
@@ -37,7 +38,7 @@ class _MainPageState extends State<MainPage> {
           crossAxisCount: 2, // 列数
           crossAxisSpacing: 10, // 列间距
           children: List.generate(_list.length, (index) {
-            // 传入数据
+            // 传入数据 父传子
             return Child(foodName: _list[index]); // 返回整个子组件
           }),
         ),
