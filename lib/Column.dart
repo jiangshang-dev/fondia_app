@@ -19,7 +19,42 @@ class MainPage extends StatelessWidget {
         appBar: AppBar(title: Text('头部区域')),
         // Center 充满了父组件
         body: Container(
-
+          // 宽度为double.infinity 正无穷大
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(color: Colors.yellow),
+          child: Column(
+            // 对齐方式
+            // mainAxisAlignment: MainAxisAlignment.spaceBetween,// 两头对齐
+            // mainAxisAlignment: MainAxisAlignment.spaceAround, // 环绕模式
+            // mainAxisAlignment: MainAxisAlignment.spaceEvenly, // 平均分
+            // mainAxisAlignment: MainAxisAlignment.start, // 从头排列
+            // mainAxisAlignment: MainAxisAlignment.end, // 尾部排列
+            mainAxisAlignment: MainAxisAlignment.center, // 居中排列
+            crossAxisAlignment: CrossAxisAlignment.center, // 交叉轴排列 垂直对齐
+            // crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴排列 垂直对齐
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                color: Colors.blue,
+              ),
+              // SizedBox(height: 10),
+              Container(
+                margin: EdgeInsetsGeometry.only(top: 10),
+                height: 100,
+                width: 100,
+                color: Colors.blue,
+              ),
+              // SizedBox(height: 10),
+              Container(
+                margin: EdgeInsetsGeometry.only(top: 10),
+                height: 100,
+                width: 100,
+                color: Colors.blue,
+              ),
+            ],
+          ),
         ),
       ),
     );
