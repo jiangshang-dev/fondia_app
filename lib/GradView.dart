@@ -12,8 +12,6 @@ class MainPage extends StatelessWidget {
   Widget build(BuildContext context) {
     print("无状态组件的构建");
 
-    ScrollController _controller = ScrollController();
-
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: Text('SingleChildScrollView滚动组件')),
