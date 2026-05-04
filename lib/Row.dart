@@ -19,7 +19,7 @@ class MainPage extends StatelessWidget {
         appBar: AppBar(title: Text('头部区域')),
         // Center 充满了父组件
         body: Container(
-          // 宽度为double.infinity 正无穷大
+          // 宽度为double.infinity 正无穷大 相当于css的 100%
           width: double.infinity,
           height: double.infinity,
           decoration: BoxDecoration(color: Colors.yellow),
