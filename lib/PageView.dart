@@ -4,9 +4,17 @@ void main() {
   runApp(MainPage());
 }
 
-// 无状态组件
-class MainPage extends StatelessWidget {
+class MainPage extends StatefulWidget {
   const MainPage({super.key});
+
+  @override
+  State<MainPage> createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
+  // 当前激活索引
+  int _currentIndex = 0;
+  PageController _controller = PageController();
 
   @override
   Widget build(BuildContext context) {
@@ -19,21 +27,71 @@ class MainPage extends StatelessWidget {
           // 包裹普通widget的
           slivers: [
             SliverToBoxAdapter(
-              child: Container(
-                height: 260,
-                color: Colors.blue,
-                alignment: Alignment.center,
-                // 轮播图
-                child: PageView.builder(
-                    itemCount: 10,
-                    itemBuilder: (BuildContext context, int index){
-                      return Container(
-                        color: Colors.red,
-                        alignment: Alignment.center,
-                        child: Text('轮播图${index + 1}'),
-                      );
-                    }
-                ),
+              child: Stack(
+                children: [
+                  // 轮播图
+                  Container(
+                    height: 260,
+                    color: Colors.blue,
+                    alignment: Alignment.center,
+                    // 轮播图
+                    child: PageView.builder(
+                      // 控制器绑定给页面控制器
+                      controller: _controller,
+                      itemCount: 10, // 轮播图数量
+                      // 构建轮播图子项
+                      itemBuilder: (BuildContext context, int index) {
+                        return Container(
+                          color: Colors.blue,
+                          alignment: Alignment.center,
+                          child: Text('轮播图${index + 1}'),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // 轮播图底部的小圆点
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 40,
+                    child: Container(
+                      // color: Colors.red,
+                      child: Row(
+                        // 圆点居中
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(10, (index) {
+                          return GestureDetector(
+                            onTap: () {
+                              print('点击了${index}');
+                              // todo 跳转到指定位置，切换到具体的page
+                              // _controller.jumpToPage(index);
+                              _controller.animateToPage(index,
+                                  duration: Duration(seconds: 1),
+                                  curve: Curves.linear);
+                              _currentIndex = index;
+                              print('选择了${_currentIndex}');
+                              setState(() {});
+                            },
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              margin: EdgeInsets.only(left: 10),
+                              decoration: BoxDecoration(
+                                // 激活小圆点 红色还是白色，当前点击和轮播图索引一致
+                                color: _currentIndex == index
+                                    ? Colors.red
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -42,27 +100,31 @@ class MainPage extends StatelessWidget {
 
             // 横向列表
             SliverPersistentHeader(
-                delegate: _StickyCategory(),
-                pinned: true // 固定吸顶
+              delegate: _StickyCategory(),
+              pinned: true, // 固定吸顶
             ),
 
             // 设置间距
             SliverToBoxAdapter(child: SizedBox(height: 10)),
 
             SliverList.separated(
-                itemCount: 100,
-                itemBuilder: (BuildContext context, int index) {
-                  return Container(
-                    height: 100,
-                    color: Colors.blue,
-                    alignment: Alignment.center,
-                    child: Text('列表项${index + 1}', style: TextStyle(fontSize: 20, color: Colors.white)),
-                  );
-                },
+              itemCount: 100,
+              itemBuilder: (BuildContext context, int index) {
+                return Container(
+                  height: 100,
+                  color: Colors.blue,
+                  alignment: Alignment.center,
+                  child: Text(
+                    '列表项${index + 1}',
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
+                );
+              },
 
-                separatorBuilder: (BuildContext context, int index) {
-                  return SizedBox(height: 20);
-                })
+              separatorBuilder: (BuildContext context, int index) {
+                return SizedBox(height: 20);
+              },
+            ),
           ],
         ),
       ),
@@ -74,10 +136,10 @@ class MainPage extends StatelessWidget {
 class _StickyCategory extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
-      BuildContext context,
-      double shrinkOffset,
-      bool overlapsContent,
-      ) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(
       color: Colors.white,
       child: ListView.builder(
