@@ -32,6 +32,9 @@ class _MainPageState extends State<MainPage> {
     Dioutils dio = Dioutils();
     var result = await dio.get('/v1_0/channels');
     print(result.data);
+    var res = result.data as Map<String, dynamic>;
+    print(res['data']['channels'][0]);
+    print(res['data']['channels']);
   }
 
   @override
