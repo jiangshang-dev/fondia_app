@@ -218,10 +218,10 @@ class _CategoryViewState extends State<CategoryView> {
                             physics: NeverScrollableScrollPhysics(),
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 4,
-                                  childAspectRatio: 0.85,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
+                                    crossAxisCount: 4,
+                                    mainAxisExtent: 100, // 固定高度为100（图片60 + 间距8 + 文字高度约20 + 缓冲）
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12
                                 ),
                             itemCount: section['items'].length,
                             itemBuilder: (context, itemIndex) {
