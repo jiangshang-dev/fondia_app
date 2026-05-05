@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/pages/Detail/index.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -235,34 +236,46 @@ class _HomeViewState extends State<HomeView> {
               itemCount: _cuisineList.length,
               itemBuilder: (context, index) {
                 final item = _cuisineList[index];
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Center(
-                        child: Text(
-                          item['icon']!,
-                          style: TextStyle(fontSize: 26),
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailView(
+                          // cuisine: item,
                         ),
                       ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      item['name']!,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
+                    );
+                  },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(
+                          child: Text(
+                            item['icon']!,
+                            style: TextStyle(fontSize: 26),
+                          ),
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                      SizedBox(height: 6),
+                      Text(
+                        item['name']!,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
