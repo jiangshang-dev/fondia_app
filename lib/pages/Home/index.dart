@@ -173,29 +173,43 @@ class _HomeViewState extends State<HomeView> {
               builder: (context, constraints) {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  // 分类详情跳转
                   children: _hotCuisineList.map((item) {
-                    return Column(
-                      children: [
-                        Container(
-                          width: 70,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            image: DecorationImage(
-                              image: AssetImage(item['image']!),
-                              fit: BoxFit.cover,
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CategoryDetailView(
+                              // 这里传递参数，例如菜品名称
+                              // dishName: item['name'],
                             ),
                           ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          item['name']!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                        );
+                      },
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 70,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              image: DecorationImage(
+                                image: AssetImage(item['image']!),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          SizedBox(height: 8),
+                          Text(
+                            item['name']!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   }).toList(),
                 );
