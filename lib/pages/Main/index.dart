@@ -96,7 +96,7 @@ class _MainPageState extends State<MainPage> {
             SizedBox(width: 16),
             Expanded(
               child: Container(
-                height: 52,
+                height: 40,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   // color: Colors.grey[100],
