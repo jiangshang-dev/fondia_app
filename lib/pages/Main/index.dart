@@ -501,19 +501,8 @@ class _MainPageState extends State<MainPage> {
                               SizedBox(height: 8),
                               Row(
                                 children: [
-                                  /*Icon(
-                                    Icons.favorite_border,
-                                    color: Colors.red[400],
-                                    size: 14,
-                                  ),*/
+
                                   SizedBox(width: 4),
-                                  // Text(
-                                  // item['likes']!,
-                                  // style: TextStyle(
-                                  //   color: Colors.grey[600],
-                                  //   fontSize: 10,
-                                  // ),
-                                  // ),
                                 ],
                               ),
                             ],
