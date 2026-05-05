@@ -295,30 +295,6 @@ class _MainPageState extends State<MainPage> {
                   if (index == _hotCuisineList.length) {
                     return Padding(
                       padding: EdgeInsets.only(right: 0),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 50,
-                            height: 70,
-                            margin: EdgeInsets.only(right: 12),
-                            // 图片组件
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: AssetImage('lib/assets/more.png'),
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            '更多',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
                     );
                   }
                   final item = _hotCuisineList[index];
@@ -327,8 +303,8 @@ class _MainPageState extends State<MainPage> {
                     child: Column(
                       children: [
                         Container(
-                          width: 60,
-                          height: 90,
+                          width: 70,
+                          height: 100,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
                             image: DecorationImage(
