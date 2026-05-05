@@ -9,6 +9,7 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
+  int _currentIndex = 0;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,6 +18,18 @@ class _MainPageState extends State<MainPage> {
       ),
       body: Center(
         child: Text('首页'),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        showUnselectedLabels:  true,
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.black,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        currentIndex: _currentIndex,
+        items: [],
       ),
     );
   }
