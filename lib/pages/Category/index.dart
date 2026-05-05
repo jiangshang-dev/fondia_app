@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/pages/Detail/index.dart';
 
 class CategoryView extends StatefulWidget {
   const CategoryView({super.key});
@@ -226,29 +227,43 @@ class _CategoryViewState extends State<CategoryView> {
                             itemCount: section['items'].length,
                             itemBuilder: (context, itemIndex) {
                               final item = section['items'][itemIndex];
-                              return Column(
-                                children: [
-                                  Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      image: DecorationImage(
-                                        image: NetworkImage(item['image']),
-                                        fit: BoxFit.cover,
+                              return GestureDetector(
+                                onTap: () {
+                                  // 执行跳转并传参
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const DetailView(
+                                        // 这里传递参数，例如菜品名称
+                                        // dishName: item['name'],
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    item['name'],
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
+                                  );
+                                },
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        image: DecorationImage(
+                                          image: NetworkImage(item['image']),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
                                     ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
+                                    SizedBox(height: 8),
+                                    Text(
+                                      item['name'],
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
                               );
                             },
                           ),
