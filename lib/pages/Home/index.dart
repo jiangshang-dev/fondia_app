@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class HomeView extends StatefulWidget {
@@ -166,44 +165,37 @@ class _HomeViewState extends State<HomeView> {
             ),
           ),
           SizedBox(height: 16),
-          Container(
-            height: 140,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _hotCuisineList.length + 1,
-              itemBuilder: (context, index) {
-                if (index == _hotCuisineList.length) {
-                  return Padding(
-                    padding: EdgeInsets.only(right: 0),
-                  );
-                }
-                final item = _hotCuisineList[index];
-                return Padding(
-                  padding: EdgeInsets.only(right: 12),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 70,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          image: DecorationImage(
-                            image: AssetImage(item['image']!),
-                            fit: BoxFit.cover,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: _hotCuisineList.map((item) {
+                    return Column(
+                      children: [
+                        Container(
+                          width: 70,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            image: DecorationImage(
+                              image: AssetImage(item['image']!),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        item['name']!,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                        SizedBox(height: 8),
+                        Text(
+                          item['name']!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    );
+                  }).toList(),
                 );
               },
             ),
@@ -238,16 +230,17 @@ class _HomeViewState extends State<HomeView> {
               physics: NeverScrollableScrollPhysics(),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
-                childAspectRatio: 1.2,
+                mainAxisExtent: 95, // ✅ 关键：固定每个格子高度
               ),
               itemCount: _cuisineList.length,
               itemBuilder: (context, index) {
                 final item = _cuisineList[index];
                 return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 60,
-                      height: 60,
+                      width: 50,
+                      height: 50,
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(16),
@@ -255,17 +248,19 @@ class _HomeViewState extends State<HomeView> {
                       child: Center(
                         child: Text(
                           item['icon']!,
-                          style: TextStyle(fontSize: 32),
+                          style: TextStyle(fontSize: 26),
                         ),
                       ),
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 6),
                     Text(
                       item['name']!,
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 );
@@ -380,12 +375,7 @@ class _HomeViewState extends State<HomeView> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             SizedBox(height: 8),
-                            Row(
-                              children: [
-
-                                SizedBox(width: 4),
-                              ],
-                            ),
+                            Row(children: [SizedBox(width: 4)]),
                           ],
                         ),
                       ),
