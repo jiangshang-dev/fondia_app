@@ -34,31 +34,11 @@ class _MainPageState extends State<MainPage> {
   ];
 
   final List<Map<String, String>> _hotCuisineList = [
-    {
-      'name': '东北菜',
-      'image':
-          'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20northeastern%20cuisine%20food%20dish&image_size=square_hd',
-    },
-    {
-      'name': '台湾菜',
-      'image':
-          'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=taiwanese%20cuisine%20food%20dish&image_size=square_hd',
-    },
-    {
-      'name': '赤峰菜',
-      'image':
-          'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chifeng%20cuisine%20food%20dish&image_size=square_hd',
-    },
-    {
-      'name': '北京菜',
-      'image':
-          'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=beijing%20cuisine%20food%20dish&image_size=square_hd',
-    },
-    {
-      'name': '川菜',
-      'image':
-          'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=sichuan%20cuisine%20food%20dish&image_size=square_hd',
-    },
+    {'name': '东北菜', 'image': 'lib/assets/addr/dongbei.png'},
+    {'name': '台湾菜', 'image': 'lib/assets/addr/taipei.png'},
+    {'name': '赤峰菜', 'image': 'lib/assets/addr/chifeng.png'},
+    {'name': '北京菜', 'image': 'lib/assets/addr/tiantan.png'},
+    {'name': '川菜', 'image': 'lib/assets/addr/chuan.png'},
   ];
 
   final List<Map<String, String>> _cuisineList = [
@@ -77,30 +57,10 @@ class _MainPageState extends State<MainPage> {
   ];
 
   final List<Map<String, String>> _recommendList = [
-    {
-      'name': '地三鲜',
-      'desc': '东北经典下饭菜',
-      'likes': '2.1万',
-      'image': '',
-    },
-    {
-      'name': '台湾牛肉面',
-      'desc': '汤鲜味美 · 一碗满足',
-      'likes': '1.8万',
-      'image': '',
-    },
-    {
-      'name': '北京烤鸭',
-      'desc': '外酥里嫩 · 皮脆肉香',
-      'likes': '2.6万',
-      'image': '',
-    },
-    {
-      'name': '赤峰手把肉',
-      'desc': '原汁原味 · 鲜香不腻',
-      'likes': '1.3万',
-      'image': '',
-    },
+    {'name': '地三鲜', 'desc': '东北经典下饭菜', 'likes': '2.1万', 'image': ''},
+    {'name': '台湾牛肉面', 'desc': '汤鲜味美 · 一碗满足', 'likes': '1.8万', 'image': ''},
+    {'name': '北京烤鸭', 'desc': '外酥里嫩 · 皮脆肉香', 'likes': '2.6万', 'image': ''},
+    {'name': '赤峰手把肉', 'desc': '原汁原味 · 鲜香不腻', 'likes': '1.3万', 'image': ''},
   ];
 
   List<BottomNavigationBarItem> _getTabBarWidget() {
@@ -123,38 +83,71 @@ class _MainPageState extends State<MainPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '菜谱',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    '让做饭更简单',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
+        title: Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '菜谱',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  SizedBox(width: 8),
-                  Container(
-                    height: 4,
-                    width: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(2),
+                ),
+                Column(
+                  children: [
+                    Text(
+                      '让做饭更简单',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                    SizedBox(width: 8),
+                    Container(
+                      height: 4,
+                      width: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  // color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: TextField(
+                  // 搜索框
+                  decoration: InputDecoration(
+                    hintText: '搜索菜谱、食材、菜系',
+                    hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Colors.grey[600],
+                      size: 24,
+                    ),
+                    // border: ,
+                    border: InputBorder.none,
+                    // border: OutlineInputBorder(
+                    //     borderRadius: BorderRadius.circular(5),
+                    // ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
                     ),
                   ),
-                ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         actions: [
           Padding(
@@ -170,45 +163,17 @@ class _MainPageState extends State<MainPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // 轮播图
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(26),
-                      ),
-                      child: Row(
-                        children: [
-                          SizedBox(width: 16),
-                          Icon(Icons.search, color: Colors.grey[600], size: 24),
-                          SizedBox(width: 8),
-                          Text(
-                            '搜索菜谱、食材、菜系',
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.all(10),
+              // padding: EdgeInsets.symmetric(horizontal: 16),
               child: Container(
                 height: 220,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   image: DecorationImage(
                     image: NetworkImage(
-                      'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=braised%20pork%20belly%20hongshaorou%20chinese%20food&image_size=landscape_16_9',
+                      'https://i2.chuimg.com/bd39fd8c63374e5bb1d499e7c7dcd2e1_1036w_777h.jpg',
                     ),
                     fit: BoxFit.cover,
                   ),
@@ -288,6 +253,7 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
             SizedBox(height: 24),
+            // 热门菜系
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -332,18 +298,16 @@ class _MainPageState extends State<MainPage> {
                       child: Column(
                         children: [
                           Container(
-                            width: 100,
-                            height: 100,
+                            width: 50,
+                            height: 70,
                             margin: EdgeInsets.only(right: 12),
+                            // 图片组件
                             decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Icon(
-                              Icons.apps,
-                              color: Colors.brown[300],
-                              size: 48,
-                            ),
+                              image: DecorationImage(
+                                image: AssetImage('lib/assets/more.png'),
+                                fit: BoxFit.cover,
+                              ),
+                            )
                           ),
                           SizedBox(height: 8),
                           Text(
@@ -363,12 +327,12 @@ class _MainPageState extends State<MainPage> {
                     child: Column(
                       children: [
                         Container(
-                          width: 100,
-                          height: 100,
+                          width: 60,
+                          height: 90,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
                             image: DecorationImage(
-                              image: NetworkImage(item['image']!),
+                              image: AssetImage(item['image']!),
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -377,7 +341,7 @@ class _MainPageState extends State<MainPage> {
                         Text(
                           item['name']!,
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -388,6 +352,7 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
             SizedBox(height: 24),
+            // 菜系分类
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -451,6 +416,7 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
             SizedBox(height: 8),
+            // 向下箭头查看更多
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Icon(
@@ -460,6 +426,7 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
             SizedBox(height: 24),
+            // 今日推荐
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -541,7 +508,7 @@ class _MainPageState extends State<MainPage> {
                               Text(
                                 item['name']!,
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -550,7 +517,7 @@ class _MainPageState extends State<MainPage> {
                                 item['desc']!,
                                 style: TextStyle(
                                   color: Colors.grey[600],
-                                  fontSize: 14,
+                                  fontSize: 12,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -558,19 +525,19 @@ class _MainPageState extends State<MainPage> {
                               SizedBox(height: 8),
                               Row(
                                 children: [
-                                  Icon(
+                                  /*Icon(
                                     Icons.favorite_border,
                                     color: Colors.red[400],
-                                    size: 18,
-                                  ),
+                                    size: 14,
+                                  ),*/
                                   SizedBox(width: 4),
-                                  Text(
-                                    item['likes']!,
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 14,
-                                    ),
-                                  ),
+                                  // Text(
+                                  // item['likes']!,
+                                  // style: TextStyle(
+                                  //   color: Colors.grey[600],
+                                  //   fontSize: 10,
+                                  // ),
+                                  // ),
                                 ],
                               ),
                             ],
