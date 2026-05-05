@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/pages/CategoryDetail/index.dart';
 import 'package:fondia/pages/Detail/index.dart';
 
 class HomeView extends StatefulWidget {
@@ -241,7 +242,7 @@ class _HomeViewState extends State<HomeView> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => DetailView(
+                        builder: (context) => CategoryDetailView(
                           // cuisine: item,
                         ),
                       ),
