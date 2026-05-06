@@ -27,7 +27,7 @@ class _MainPageState extends State<MainPage> {
       'active_icon': 'lib/assets/ic_public_pro_active.png',
     },
     {
-      'text': '收藏',
+      'text': 'AI助手',
       'icon': 'lib/assets/ic_public_cart_normal.png',
       'active_icon': 'lib/assets/ic_public_cart_active.png',
     },
