@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/pages/Ai/index.dart';
 import 'package:fondia/pages/Category/index.dart';
-import 'package:fondia/pages/Collection/index.dart';
 import 'package:fondia/pages/Home/index.dart';
 import 'package:fondia/pages/Mine/index.dart';
 import 'package:fondia/pages/Top/index.dart';
@@ -53,7 +53,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   List<Widget> _getChildren() {
-    return [HomeView(), CategoryView(),  CollectionView(), MineView()];
+    return [HomeView(), CategoryView(),  AiView(), MineView()];
   }
 
   @override
