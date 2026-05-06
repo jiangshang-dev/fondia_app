@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/pages/AiChat/index.dart';
 
 class AiView extends StatefulWidget {
   const AiView({super.key});
@@ -76,13 +77,26 @@ class _AiViewState extends State<AiView> {
                 gradient: const LinearGradient(colors: [Colors.orangeAccent, Colors.orange]),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("开始咨询", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  Icon(Icons.arrow_forward, color: Colors.white, size: 16),
-                ],
-              ),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AiChatView(
+                        // 这里传递参数，例如菜品名称
+                        // dishName: item['name'],
+                      ),
+                    ),
+                  );
+                },
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("开始咨询", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    Icon(Icons.arrow_forward, color: Colors.white, size: 16),
+                  ],
+                ),
+              )
             )
           ],
         ),
