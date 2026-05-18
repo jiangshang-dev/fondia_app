@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/components/Mine/Collection.dart';
+import 'package:fondia/components/Mine/Liked.dart';
 import 'package:fondia/components/Mine/Setting.dart';
 import 'package:fondia/components/Mine/UserInfo.dart';
 
@@ -33,7 +34,6 @@ class _MineViewState extends State<MineView> {
                 _buildHeader(),
                 _buildPointsCard(),
                 _buildSection("我的内容", _buildMyContentGrid()),
-                _buildSection("更多服务", _buildMoreServicesGrid()),
                 _buildSettingsList(),
                 const SizedBox(height: 20),
               ],
@@ -282,9 +282,17 @@ class _MineViewState extends State<MineView> {
               );
             },
           ),
-          _buildGridItem(Icons.thumb_up, "我的点赞", "128", color: Colors.orange),
+          _buildGridItem(
+              Icons.thumb_up, "我的点赞", "128",
+              color: Colors.orange,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LikedView()),
+                );
+              },
+          ),
           _buildGridItem(Icons.comment, "我的评论", "36", color: Colors.blue),
-          _buildGridItem(Icons.menu_book, "我的菜谱", "12", color: Colors.brown),
           _buildGridItem(Icons.history, "浏览记录", "89", color: Colors.indigo),
           _buildGridItem(Icons.restaurant, "做过的菜", "18", color: Colors.amber),
           _buildGridItem(Icons.list_alt, "我的订单", "3", color: Colors.orange),
@@ -310,30 +318,6 @@ class _MineViewState extends State<MineView> {
           const SizedBox(height: 4),
           Text(label, style: const TextStyle(fontSize: 12)),
           Text(count, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        ],
-      ),
-    );
-  }
-
-  // 6. 更多服务网格
-  Widget _buildMoreServicesGrid() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 4,
-        children: [
-          _buildGridItem(Icons.favorite_border, "我的关注", "12"),
-          _buildGridItem(Icons.notifications_none, "互动消息", "99"),
-          _buildGridItem(Icons.shopping_basket_outlined, "食材清单", ""),
-          _buildGridItem(Icons.lightbulb_outline, "智能推荐", ""),
-          _buildGridItem(Icons.badge_outlined, "成就勋章", ""),
-          _buildGridItem(Icons.event_available_outlined, "活动中心", ""),
         ],
       ),
     );

@@ -41,21 +41,6 @@ class _CollectionViewState extends State<CollectionView> with SingleTickerProvid
           IconButton(onPressed: () {}, icon: const Icon(Icons.search, color: Colors.black)),
           TextButton(onPressed: () {}, child: const Text('管理', style: TextStyle(color: Colors.black))),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: Colors.orange,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Colors.orange,
-          indicatorSize: TabBarIndicatorSize.label,
-          tabs: const [
-            Tab(text: "菜谱"),
-            Tab(text: "食材"),
-            Tab(text: "菜系"),
-            Tab(text: "文章"),
-            Tab(text: "合集"),
-          ],
-        ),
       ),
       body: SingleChildScrollView(
         child: Column(
