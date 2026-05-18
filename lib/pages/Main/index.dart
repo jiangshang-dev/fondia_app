@@ -53,31 +53,32 @@ class _MainPageState extends State<MainPage> {
   }
 
   List<Widget> _getChildren() {
-    return [HomeView(), CategoryView(),  AiView(), MineView()];
+    return [HomeView(), CategoryView(), AiView(), MineView()];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: TopView(),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Icon(
-              Icons.notifications_none,
-              color: Colors.black,
-              size: 28,
-            ),
-          ),
-        ],
+      appBar: _currentIndex != 3
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              title: TopView(),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Icon(
+                    Icons.notifications_none,
+                    color: Colors.black,
+                    size: 28,
+                  ),
+                ),
+              ],
+            )
+          : null,
+      body: SafeArea(
+        child: IndexedStack(children: _getChildren(), index: _currentIndex),
       ),
-      body: SafeArea(child: IndexedStack(
-        children: _getChildren(),
-        index: _currentIndex,
-      )),
       bottomNavigationBar: BottomNavigationBar(
         showUnselectedLabels: true,
         selectedItemColor: Colors.black,
