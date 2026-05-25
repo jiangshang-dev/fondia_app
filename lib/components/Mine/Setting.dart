@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/components/Mine/Account.dart';
+import 'package:fondia/components/Mine/DeleteAccount.dart';
 import 'package:fondia/components/Mine/Language.dart';
+import 'package:fondia/components/Mine/Phone.dart';
 import 'package:fondia/pages/Login/index.dart';
+
+import 'PrivacySettings.dart';
 
 class Setting extends StatefulWidget {
   const Setting({super.key});
@@ -68,16 +73,27 @@ class _SettingState extends State<Setting> {
           // 1. 账号与安全
           _buildSectionTitle('账号与安全'),
           _buildGroupCard([
-            _buildListTile(Icons.person_outline, '个人资料'),
             _buildListTile(
               Icons.phone_android_outlined,
               '手机号绑定',
               trailingText: '138****5678',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PhoneView()),
+                );
+              },
             ),
             _buildListTile(
               Icons.link_outlined,
               '账号绑定',
               trailingWidget: _buildSocialIcons(),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const Account()),
+                );
+              },
             ),
             _buildListTile(Icons.lock_open_outlined, '修改密码'),
             _buildListTile(
@@ -85,8 +101,22 @@ class _SettingState extends State<Setting> {
               '登录设备管理',
               trailingText: '2台设备在线',
             ),
-            _buildListTile(Icons.verified_user_outlined, '隐私设置'),
-            _buildListTile(Icons.person_remove_outlined, '注销账号'),
+            _buildListTile(
+              Icons.verified_user_outlined,
+              '隐私设置',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PrivacySettings()),
+                );
+              },
+            ),
+            _buildListTile(Icons.person_remove_outlined, '注销账号', onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const DeleteAccountView()),
+              );
+            }),
           ]),
 
           // 2. 通用设置
