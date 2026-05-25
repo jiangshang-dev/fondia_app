@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/components/Mine/Language.dart';
 import 'package:fondia/pages/Login/index.dart';
 
 class Setting extends StatefulWidget {
@@ -95,6 +96,12 @@ class _SettingState extends State<Setting> {
               Icons.language_outlined,
               '语言设置',
               trailingText: '简体中文',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const Language()),
+                );
+              },
             ),
             _buildSwitchTile(
               Icons.dark_mode_outlined,
@@ -265,6 +272,7 @@ class _SettingState extends State<Setting> {
     String title, {
     String? trailingText,
     Widget? trailingWidget,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       minLeadingWidth: 20,
@@ -290,7 +298,7 @@ class _SettingState extends State<Setting> {
           const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey),
         ],
       ),
-      onTap: () {},
+      onTap: onTap,
     );
   }
 
