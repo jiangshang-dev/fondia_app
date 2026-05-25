@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/components/Mine/BrowsingHistory.dart';
 import 'package:fondia/components/Mine/Collection.dart';
 import 'package:fondia/components/Mine/Liked.dart';
+import 'package:fondia/components/Mine/MyComment.dart';
 import 'package:fondia/components/Mine/Setting.dart';
 import 'package:fondia/components/Mine/UserInfo.dart';
 
@@ -292,8 +294,26 @@ class _MineViewState extends State<MineView> {
                 );
               },
           ),
-          _buildGridItem(Icons.comment, "我的评论", "36", color: Colors.blue),
-          _buildGridItem(Icons.history, "浏览记录", "89", color: Colors.indigo),
+          _buildGridItem(
+              Icons.comment, "我的评论", "36",
+              color: Colors.blue,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MyCommentView()),
+                );
+              },
+          ),
+          _buildGridItem(
+              Icons.history, "浏览记录", "89",
+              color: Colors.indigo,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BrowsingHistoryView()),
+                );
+              }
+          ),
           _buildGridItem(Icons.restaurant, "做过的菜", "18", color: Colors.amber),
           _buildGridItem(Icons.list_alt, "我的订单", "3", color: Colors.orange),
         ],
