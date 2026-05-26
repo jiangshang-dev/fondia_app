@@ -1,17 +1,30 @@
-# fondia
+# 架构设计
 
-A new Flutter project.
+xxl-job
+链路追踪集成skywalking
 
-## Getting Started
+## 服务拆分
 
-This project is a starting point for a Flutter application.
+用户与权限服务
+jeecg-module-user
+登录（微信/支付宝/Google/手机号/密码）、个人信息修改、账号安全、设置（设备管理、注销）
 
-A few resources to get you started if this is your first Flutter project:
+菜谱内容服务
+jeecg-module-recipe
+首页 Banner、热门菜系、菜谱分类、菜谱详情（视频/图文步骤、食材准备、难度、热量）
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+互动与社交服务
+jeecg-module-interaction
+业务域：菜谱收藏、点赞、评论（带层级回复）、用户关注与粉丝、互动消息通知。
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+AI智能与健康服务
+jeecg-module-aihealth
+AI 营养咨询（减脂、控糖、高血压等方案定制）、厨房偏好设置（忌口、过敏源）、智能推荐、每日推荐。
+
+通知与消息服务
+jeecg-module-notification
+系统公告、评论/点赞/关注的Push通知、邮件订阅。
+
+文件与媒体服务 (Media Service)
+jeecg-module-media
+阿里云视频点播集成（上传、播放、管理视频）
