@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../components/Ai/AiExclusive.dart';
+
 class AiChatView extends StatefulWidget {
   const AiChatView({super.key});
 
@@ -24,14 +26,7 @@ class _AiChatViewState extends State<AiChatView> {
           "AI营养咨询",
           style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: const Text("咨询记录", style: TextStyle(color: Colors.black54, fontSize: 14)),
-          ),
-          const SizedBox(width: 8),
-        ],
+        centerTitle: true
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -265,18 +260,33 @@ class _AiChatViewState extends State<AiChatView> {
   }
 
   Widget _buildActionButton() {
-    return Container(
-      width: double.infinity,
-      height: 50,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFFFFA726), Color(0xFFFF7043)]),
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5)),
-        ],
-      ),
-      child: const Center(
-        child: Text("开始生成专属方案", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+    return InkWell( // 将Container改为InkWell以支持点击事件
+      onTap: () {
+        // 添加导航逻辑
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AiExclusiveView()),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [Color(0xFFFFA726), Color(0xFFFF7043)]),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5)),
+          ],
+        ),
+        child: const Center(
+          child: Text("开始生成专属方案",
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold
+            ),
+          ),
+        ),
       ),
     );
   }

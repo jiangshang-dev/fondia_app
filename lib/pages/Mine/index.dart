@@ -314,8 +314,7 @@ class _MineViewState extends State<MineView> {
                 );
               }
           ),
-          _buildGridItem(Icons.restaurant, "做过的菜", "18", color: Colors.amber),
-          _buildGridItem(Icons.list_alt, "我的订单", "3", color: Colors.orange),
+          // _buildGridItem(Icons.restaurant, "做过的菜", "18", color: Colors.amber),
         ],
       ),
     );
