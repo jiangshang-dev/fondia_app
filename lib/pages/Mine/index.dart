@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/components/Mine/BrowsingHistory.dart';
 import 'package:fondia/components/Mine/Collection.dart';
+import 'package:fondia/components/Mine/Feedback.dart';
 import 'package:fondia/components/Mine/Liked.dart';
 import 'package:fondia/components/Mine/MyComment.dart';
+import 'package:fondia/components/Mine/OnlineService.dart';
 import 'package:fondia/components/Mine/Setting.dart';
 import 'package:fondia/components/Mine/UserInfo.dart';
 
@@ -36,7 +38,7 @@ class _MineViewState extends State<MineView> {
                 _buildHeader(),
                 _buildPointsCard(),
                 _buildSection("我的内容", _buildMyContentGrid()),
-                _buildSettingsList(),
+                // _buildSettingsList(), 设置
                 const SizedBox(height: 20),
               ],
             ),
@@ -313,6 +315,26 @@ class _MineViewState extends State<MineView> {
                   MaterialPageRoute(builder: (context) => const BrowsingHistoryView()),
                 );
               }
+          ),
+          _buildGridItem(
+              Icons.chat, "在线客服", "18",
+              color: Colors.amber,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const OnlineServiceView()),
+                );
+              },
+          ),
+          _buildGridItem(
+              Icons.feedback, "意见反馈", "19",
+              color: Colors.amber,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FeedbackView()),
+                );
+              },
           ),
           // _buildGridItem(Icons.restaurant, "做过的菜", "18", color: Colors.amber),
         ],
