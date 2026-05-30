@@ -7,6 +7,7 @@ import 'package:fondia/components/Mine/MyComment.dart';
 import 'package:fondia/components/Mine/OnlineService.dart';
 import 'package:fondia/components/Mine/Setting.dart';
 import 'package:fondia/components/Mine/UserInfo.dart';
+import 'package:fondia/components/Mine/VIP.dart';
 
 class MineView extends StatefulWidget {
   const MineView({super.key});
@@ -273,6 +274,18 @@ class _MineViewState extends State<MineView> {
         crossAxisCount: 4,
         mainAxisSpacing: 16,
         children: [
+          _buildGridItem(
+            Icons.vaccines,
+            "会员中心",
+            "56",
+            color: Colors.red,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const VipView()),
+              );
+            },
+          ),
           // 跳转到收藏页面
           _buildGridItem(
             Icons.favorite,

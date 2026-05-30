@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fondia/pages/CategoryDetail/index.dart';
 import 'package:fondia/pages/Detail/index.dart';
 
+// 首页
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
 
@@ -154,22 +155,27 @@ class _HomeViewState extends State<HomeView> {
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    Text(
-                      '全部菜系',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 16),
-                    ),
-                    Icon(Icons.chevron_right, color: Colors.grey[500]),
-                  ],
-                ),
+                // Row(
+                //   children: [
+                //     Text(
+                //       '全部菜系',
+                //       style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                //     ),
+                //     Icon(Icons.chevron_right, color: Colors.grey[500]),
+                //   ],
+                // ),
               ],
             ),
           ),
           SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: LayoutBuilder(
+            child:
+            // ListView.builder(
+            //   scrollDirection: Axis.horizontal,
+            //   itemCount: 5,
+            // )
+            LayoutBuilder(
               builder: (context, constraints) {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
