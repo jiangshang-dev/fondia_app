@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/components/Home/Top.dart';
 import 'package:fondia/pages/Ai/index.dart';
 import 'package:fondia/pages/Category/index.dart';
 import 'package:fondia/pages/Home/index.dart';
 import 'package:fondia/pages/Mine/index.dart';
-import 'package:fondia/pages/Top/index.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});

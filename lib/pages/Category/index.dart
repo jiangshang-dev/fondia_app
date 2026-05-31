@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fondia/pages/Detail/index.dart';
+import 'package:fondia/components/Category/DishDetail.dart';
 
 class CategoryView extends StatefulWidget {
   const CategoryView({super.key});
@@ -233,7 +233,7 @@ class _CategoryViewState extends State<CategoryView> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const DetailView(
+                                      builder: (context) => const DishDetail(
                                         // 这里传递参数，例如菜品名称
                                         // dishName: item['name'],
                                       ),

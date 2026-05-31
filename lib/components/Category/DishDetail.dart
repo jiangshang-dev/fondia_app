@@ -1,13 +1,14 @@
+
 import 'package:flutter/material.dart';
 
-class DetailView extends StatefulWidget {
-  const DetailView({super.key});
+class DishDetail extends StatefulWidget {
+  const DishDetail({super.key});
 
   @override
-  State<DetailView> createState() => _DetailViewState();
+  State<DishDetail> createState() => _DishDetailState();
 }
 
-class _DetailViewState extends State<DetailView> {
+class _DishDetailState extends State<DishDetail> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,9 +76,12 @@ class _DetailViewState extends State<DetailView> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.arrow_back_ios, color: Colors.white),
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
               Row(
-                children: const [
+                children: [
                   Icon(Icons.star_border, color: Colors.white),
                   SizedBox(width: 4),
                   Text('收藏', style: TextStyle(color: Colors.white)),

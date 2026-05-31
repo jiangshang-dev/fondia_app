@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:fondia/components/Home/Search.dart';
 
 class TopView extends StatefulWidget {
   const TopView({super.key});
@@ -45,31 +46,38 @@ class _TopViewState extends State<TopView> {
         ),
         SizedBox(width: 16),
         Expanded(
-          child: Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              // color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: TextField(
-              // 搜索框
-              decoration: InputDecoration(
-                hintText: '搜索菜谱、食材、菜系',
-                hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: Colors.grey[600],
-                  size: 24,
-                ),
-                // border: ,
-                border: InputBorder.none,
-                // border: OutlineInputBorder(
-                //     borderRadius: BorderRadius.circular(5),
-                // ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
+          child: GestureDetector(  // 添加 GestureDetector 包裹容器
+            onTap: () {
+              // 导航到搜索页面
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchView()),
+              );
+            },
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                // color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: TextField(
+                enabled: false,  // 禁用输入框交互能力
+                // 移除原 onTap 回调
+                // 搜索框
+                decoration: InputDecoration(
+                  hintText: '搜索菜谱、食材、菜系',
+                  hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Colors.grey[600],
+                    size: 24,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
               ),
             ),

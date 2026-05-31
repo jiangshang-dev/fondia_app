@@ -2,6 +2,8 @@
 
 xxl-job
 链路追踪集成skywalking
+sentinel 服务监控与保护
+
 
 ## 服务拆分
 
@@ -25,10 +27,6 @@ AI 营养咨询（减脂、控糖、高血压等方案定制）、厨房偏好�
 jeecg-module-notification
 系统公告、评论/点赞/关注的Push通知、邮件订阅。
 
-文件与媒体服务 (Media Service)
-jeecg-module-media
-阿里云视频点播集成（上传、播放、管理视频）
-
 搜索服务
 jeecg-module-search
 菜谱搜索（根据名称、食材、难度等）、菜谱分类搜索。
@@ -41,3 +39,5 @@ app全局配置功能包括：
 - 系统日志管理（查看、导出）
 - 系统语言配置（如：中文、英文）
 
+轮播图
+搜索功能

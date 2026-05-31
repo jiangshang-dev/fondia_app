@@ -26,11 +26,21 @@ class _CategoryDetailViewState extends State<CategoryDetailView> with TickerProv
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: const Icon(Icons.arrow_back_ios_new, color: Colors.black54, size: 20),
+        leading: IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.black54, size: 20,
+            )
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.ios_share, color: Colors.black54),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pop(context);
+            },
           ),
         ],
       ),
