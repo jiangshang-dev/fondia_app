@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/components/Login/EmailLogin.dart';
+import 'package:fondia/components/Login/PasswordLogin.dart';
 import 'package:fondia/pages/Main/index.dart';
 
 class LoginPage extends StatefulWidget {
@@ -150,7 +152,7 @@ class _LoginPageState extends State<LoginPage> {
             // 登录按钮列表
             _buildThirdPartyButton(
               icon: Icons.g_mobiledata, // 建议换成真正的谷歌图标资产
-              iconColor: Colors.blue,
+              iconColor: Colors.green,
               text: '使用 Google 账号登录',
               onTap: () {
                 Navigator.pushAndRemoveUntil(
@@ -162,9 +164,10 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 16),
             _buildThirdPartyButton(
-              icon: Icons.wechat,
-              iconColor: const Color(0xff07c160),
-              text: '使用微信账号登录',
+              icon: Icons.apple,
+              // iconColor: const Color(0xff07c160),
+              iconColor: Colors.black,
+              text: '使用Apple账号登录',
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -212,7 +215,7 @@ class _LoginPageState extends State<LoginPage> {
                 _buildSubLoginItem(Icons.mail_outline, '邮箱登录', () {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => const MainPage()),
+                    MaterialPageRoute(builder: (context) => const EmailLoginView()),
                     (route) => false,
                   );
                 }),
@@ -220,7 +223,7 @@ class _LoginPageState extends State<LoginPage> {
                 _buildSubLoginItem(Icons.lock_open_outlined, '密码登录', () {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => const MainPage()),
+                    MaterialPageRoute(builder: (context) => const PasswordLoginView()),
                     (route) => false,
                   );
                 }),
