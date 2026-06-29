@@ -4,6 +4,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:fondia/constants/index.dart';
+import 'package:fondia/stores/TokenManager.dart';
 
 class DioRequest {
   final _dio = Dio();
@@ -26,6 +27,12 @@ class DioRequest {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (request, handler) {
+          // 注入token request.headers["Authorization"]  Bearer token;
+          if (tokenManager.getToken().isNotEmpty) {
+            request.headers = {
+              "Authorization": "Bearer ${tokenManager.getToken()}",
+            };
+          }
           handler.next(request);
         },
         onResponse: (response, handler) {
@@ -37,7 +44,27 @@ class DioRequest {
           handler.reject(DioException(requestOptions: response.requestOptions));
         },
         onError: (error, handler) {
-          handler.reject(error);
+          String message = '';
+          final data = error.response?.data;
+          if (data is Map<String, dynamic>) {
+            message = data['msg'] ?? data['error'] ?? data['message'] ?? '';
+          }
+          if (message.isEmpty) {
+            final statusCode = error.response?.statusCode;
+            if (statusCode == 503) {
+              message = '后端用户服务不可用，请确认 jeecg-user 微服务已启动并注册到 Nacos';
+            } else if (statusCode != null) {
+              message = '请求失败($statusCode)';
+            } else {
+              message = error.message ?? '网络请求失败';
+            }
+          }
+          handler.reject(
+            DioException(
+              requestOptions: error.requestOptions,
+              message: message,
+            ),
+          );
         },
       ),
     );
@@ -45,6 +72,11 @@ class DioRequest {
 
   Future<dynamic> get(String url, {Map<String, dynamic>? params}) {
     return _handleResponse(_dio.get(url, queryParameters: params));
+  }
+
+  // 定义post
+  Future<dynamic> post(String url, {Map<String, dynamic>? data}) {
+    return _handleResponse(_dio.post(url, data: data));
   }
 
   // 进一步处理返回结果的函数
@@ -57,9 +89,12 @@ class DioRequest {
         return data["result"];
       }
       // 抛出异常
-      throw Exception(data['msg']??'加载数据异常');
+      // throw Exception(data['msg']??'加载数据异常');
+      throw DioException(requestOptions: result.requestOptions, message: data['msg']??'加载数据异常');
     } catch (e) {
-      throw Exception(e);
+      // throw Exception(e);
+      // 不改变原来抛出的异常类型
+      rethrow;
     }
   }
 }

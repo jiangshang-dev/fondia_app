@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:fondia/components/Login/EmailLogin.dart';
-import 'package:fondia/components/Login/PasswordLogin.dart';
+import 'package:fondia/components/common/ProtocolAgreementRow.dart';
+import 'package:fondia/pages/Login/EmailLogin.dart';
+import 'package:fondia/pages/Login/PasswordLogin.dart';
 import 'package:fondia/pages/Main/index.dart';
 
 class LoginPage extends StatefulWidget {
@@ -232,7 +233,12 @@ class _LoginPageState extends State<LoginPage> {
 
             const SizedBox(height: 40),
             // 底部服务协议
-            _buildProtocolRow(),
+            ProtocolAgreementRow(
+              value: _isAgreed,
+              onChanged: (v) => setState(() => _isAgreed = v),
+              style: ProtocolCheckboxStyle.circle,
+              center: true,
+            ),
           ],
         ),
       ),
@@ -333,67 +339,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ],
       ),
-    );
-  }
-
-  // 协议勾选行
-  Widget _buildProtocolRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        GestureDetector(
-          onTap: () => setState(() => _isAgreed = !_isAgreed),
-          child: Container(
-            // 右边距
-            padding: const EdgeInsets.only(right: 8),
-            // margin: const EdgeInsets.right(8),
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: _isAgreed ? const Color(0xffff7f32) : Colors.grey[300]!,
-                width: 1.5,
-              ),
-              color: _isAgreed ? const Color(0xffff7f32) : Colors.transparent,
-            ),
-            child: _isAgreed
-                ? const Icon(Icons.check, size: 10, color: Colors.white)
-                : null,
-          ),
-        ),
-        Flexible(
-          child: RichText(
-            text: TextSpan(
-              style: const TextStyle(fontSize: 12, color: Colors.black45),
-              children: [
-                const TextSpan(text: '我已阅读并同意 '),
-                WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: const Text(
-                      '《用户协议》',
-                      style: TextStyle(color: Color(0xffff7f32), fontSize: 12),
-                    ),
-                  ),
-                ),
-                const TextSpan(text: ' 和 '),
-                WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: const Text(
-                      '《隐私政策》',
-                      style: TextStyle(color: Color(0xffff7f32), fontSize: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

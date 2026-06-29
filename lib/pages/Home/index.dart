@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/components/Home/Slider.dart';
+import 'package:fondia/components/common/SectionTitleBar.dart';
 import 'package:fondia/pages/CategoryDetail/index.dart';
 
 // 首页
@@ -141,26 +142,7 @@ class _HomeViewState extends State<HomeView> {
           ),
           SizedBox(height: 24),
           // 菜系分类
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: Colors.orange,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text(
-                  '菜系分类',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
+          SectionTitleBar(title: '菜系分类', padding: EdgeInsets.zero),
           SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -230,43 +212,10 @@ class _HomeViewState extends State<HomeView> {
           ),
           SizedBox(height: 24),
           // 今日推荐
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      '今日推荐',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text(
-                      '换一换',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 16),
-                    ),
-                    SizedBox(width: 4),
-                    Icon(Icons.refresh, color: Colors.grey[500], size: 20),
-                  ],
-                ),
-              ],
-            ),
+          SectionTitleBar(
+            title: '今日推荐',
+            actionText: '换一换',
+            padding: EdgeInsets.zero,
           ),
           SizedBox(height: 16),
           Padding(

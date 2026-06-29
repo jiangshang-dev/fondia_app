@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../components/Ai/AiExclusive.dart';
+import 'package:fondia/pages/Ai/AiExclusive.dart';
 
 class AiChatView extends StatefulWidget {
   const AiChatView({super.key});

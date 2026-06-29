@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fondia/components/Category/DishDetail.dart';
+import 'package:fondia/pages/CategoryDetail/DishDetail.dart';
 
 class CategoryView extends StatefulWidget {
   const CategoryView({super.key});
