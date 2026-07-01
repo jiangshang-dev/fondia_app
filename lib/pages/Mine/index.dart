@@ -379,18 +379,18 @@ class _MineViewState extends State<MineView> {
               );
             },
           ),
-          _buildGridItem(
-            Icons.comment,
-            "我的评论",
-            "36",
-            color: Colors.blue,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const MyCommentView()),
-              );
-            },
-          ),
+          // _buildGridItem(
+          //   Icons.comment,
+          //   "我的评论",
+          //   "36",
+          //   color: Colors.blue,
+          //   onTap: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (context) => const MyCommentView()),
+          //     );
+          //   },
+          // ),
           _buildGridItem(
             Icons.history,
             "浏览记录",
