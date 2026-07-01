@@ -18,6 +18,7 @@ class _HomeViewState extends State<HomeView> {
   List<CategoryBrief> _hotCuisines = [];
   List<CategoryBrief> _allCuisines = [];
   List<RecipeListItem> _recommendList = [];
+  List<HomeBanner> _banners = [];
   bool _loading = true;
 
   @override
@@ -27,27 +28,33 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future<void> _loadData() async {
-    try {
-      final results = await Future.wait([
-        CuisineApi.listHotCuisines(),
-        CuisineApi.listAllCuisines(),
-        CuisineApi.pageRecipes(pageNo: 1, pageSize: 4),
-      ]);
-      if (!mounted) return;
-      setState(() {
-        _hotCuisines = results[0] as List<CategoryBrief>;
-        _allCuisines = results[1] as List<CategoryBrief>;
-        _recommendList =
-            (results[2] as RecipePage).records;
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-    }
+    setState(() => _loading = true);
+
+    final hotFuture = CuisineApi.listHotCuisines().catchError((_) => <CategoryBrief>[]);
+    final allFuture = CuisineApi.listAllCuisines().catchError((_) => <CategoryBrief>[]);
+    final recipeFuture = CuisineApi.pageRecipes(pageNo: 1, pageSize: 4).catchError(
+      (_) => RecipePage(),
+    );
+    final bannerFuture = CuisineApi.listHomeBanners().catchError((_) => <HomeBanner>[]);
+
+    final results = await Future.wait([
+      hotFuture,
+      allFuture,
+      recipeFuture,
+      bannerFuture,
+    ]);
+
+    if (!mounted) return;
+    setState(() {
+      _hotCuisines = results[0] as List<CategoryBrief>;
+      _allCuisines = results[1] as List<CategoryBrief>;
+      _recommendList = (results[2] as RecipePage).records;
+      _banners = results[3] as List<HomeBanner>;
+      _loading = false;
+    });
   }
 
-  void _openCuisineDetail(int cuisineId) {
+  void _openCuisineDetail(String cuisineId) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -71,9 +78,12 @@ class _HomeViewState extends State<HomeView> {
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.all(10),
-              child: SliderView(),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: SliderView(
+                items: _banners,
+                onRecipeTap: _openRecipeDetail,
+              ),
             ),
             const SizedBox(height: 24),
             Padding(

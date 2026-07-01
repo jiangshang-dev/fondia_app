@@ -5,7 +5,7 @@ import 'package:fondia/pages/CategoryDetail/DishDetail.dart';
 import 'package:fondia/utils/recipe_image.dart';
 
 class CategoryDetailView extends StatefulWidget {
-  final int cuisineId;
+  final String cuisineId;
   final int? initialSubType;
 
   const CategoryDetailView({
@@ -25,7 +25,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView>
 
   CuisineDetail? _detail;
   List<RecipeListItem> _recipes = [];
-  int? _selectedTagId;
+  String? _selectedTagId;
   int _subType = 2;
   int _pageNo = 1;
   bool _hasMore = true;

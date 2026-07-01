@@ -27,6 +27,7 @@ class HttpConstants {
   static const String CUISINE_RECIPE_LIST = '/cuisine/recipe/list';
   static const String CUISINE_RECIPE_VIDEO_PLAY = '/cuisine/recipe/video/play';
   static const String CUISINE_TAG_LIST = '/cuisine/tag/list';
+  static const String CUISINE_BANNER_LIST = '/cuisine/banner/list';
 
   // 互动/评论
   static const String INTERACTION_COMMENT_TREE = '/interaction/comment/tree';

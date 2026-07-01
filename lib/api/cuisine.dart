@@ -19,14 +19,14 @@ class CuisineApi {
   }
 
   /// 菜系详情
-  static Future<CuisineDetail> getCuisineDetail(int cuisineId) async {
+  static Future<CuisineDetail> getCuisineDetail(String cuisineId) async {
     final result =
         await _http.get('${HttpConstants.CUISINE_CATEGORY}/$cuisineId');
     return CuisineDetail.fromJson(result as Map<String, dynamic>);
   }
 
   /// 分类页树（主食/菜 + 菜谱）
-  static Future<CategoryTree> getCategoryTree(int cuisineId) async {
+  static Future<CategoryTree> getCategoryTree(String cuisineId) async {
     final result =
         await _http.get('${HttpConstants.CUISINE_CATEGORY}/$cuisineId/tree');
     return CategoryTree.fromJson(result as Map<String, dynamic>);
@@ -34,10 +34,10 @@ class CuisineApi {
 
   /// 菜谱分页列表
   static Future<RecipePage> pageRecipes({
-    int? cuisineId,
-    int? categoryId,
+    String? cuisineId,
+    String? categoryId,
     int? subType,
-    int? tagId,
+    String? tagId,
     String? keyword,
     int pageNo = 1,
     int pageSize = 10,
@@ -67,6 +67,12 @@ class CuisineApi {
   /// 增加浏览量
   static Future<void> incrementView(String recipeId) async {
     await _http.post('${HttpConstants.CUISINE_RECIPE}/$recipeId/view');
+  }
+
+  /// 首页轮播图
+  static Future<List<HomeBanner>> listHomeBanners() async {
+    final result = await _http.get(HttpConstants.CUISINE_BANNER_LIST);
+    return _parseList(result, HomeBanner.fromJson);
   }
 
   /// 解析阿里云 VOD 视频播放地址（兜底）

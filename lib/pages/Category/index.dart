@@ -50,7 +50,7 @@ class _CategoryViewState extends State<CategoryView> {
     }
   }
 
-  Future<void> _loadTree(int cuisineId) async {
+  Future<void> _loadTree(String cuisineId) async {
     setState(() {
       _loadingTree = true;
       _error = null;
@@ -84,7 +84,7 @@ class _CategoryViewState extends State<CategoryView> {
     );
   }
 
-  void _openCuisineDetail(int cuisineId, {int? subType}) {
+  void _openCuisineDetail(String cuisineId, {int? subType}) {
     Navigator.push(
       context,
       MaterialPageRoute(
