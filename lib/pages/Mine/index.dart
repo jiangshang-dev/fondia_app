@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/api/interaction.dart';
+import 'package:fondia/api/user.dart';
+import 'package:fondia/models/user_profile.dart';
 import 'package:fondia/pages/Mine/BrowsingHistory.dart';
 import 'package:fondia/pages/Mine/Collection.dart';
 import 'package:fondia/pages/Mine/Feedback.dart';
@@ -23,11 +25,29 @@ class _MineViewState extends State<MineView> {
   int _collectCount = 0;
   int _likeCount = 0;
   int _browseCount = 0;
+  UserProfile? _profile;
 
   @override
   void initState() {
     super.initState();
+    _loadProfile();
     _loadInteractionCounts();
+  }
+
+  Future<void> _loadProfile() async {
+    if (!tokenManager.isLoggedIn()) return;
+    try {
+      final profile = await UserApi.getProfile();
+      if (!mounted) return;
+      setState(() => _profile = profile);
+      await tokenManager.saveUserInfo({
+        ...profile.toUpdateJson(),
+        'id': profile.id,
+        'username': profile.username,
+        'phone': profile.phone,
+        'email': profile.email,
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadInteractionCounts() async {
@@ -51,14 +71,19 @@ class _MineViewState extends State<MineView> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const UserInfoView()),
-    );
+    ).then((_) {
+      _loadProfile();
+    });
   }
 
   void _navigateToLogin() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const LoginPage()),
-    ).then((_) => _loadInteractionCounts());
+    ).then((_) {
+      _loadInteractionCounts();
+      _loadProfile();
+    });
   }
 
   void _openPage(Widget page) {
@@ -69,7 +94,10 @@ class _MineViewState extends State<MineView> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => page),
-    ).then((_) => _loadInteractionCounts());
+    ).then((_) {
+      _loadInteractionCounts();
+      _loadProfile();
+    });
   }
 
   @override
@@ -100,6 +128,9 @@ class _MineViewState extends State<MineView> {
   // 1. 顶部用户信息
   Widget _buildHeader() {
     final isLoggedIn = tokenManager.isLoggedIn();
+    final profile = _profile;
+    final avatarUrl = profile?.avatarUrl;
+    final hasAvatar = avatarUrl != null;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -128,11 +159,15 @@ class _MineViewState extends State<MineView> {
                   children: [
                     GestureDetector(
                       onTap: _navigateToUserInfo,
-                      child: const CircleAvatar(
+                      child: CircleAvatar(
                         radius: 35,
-                        backgroundImage: NetworkImage(
-                          'https://via.placeholder.com/150',
-                        ),
+                        backgroundColor: const Color(0xFFEEEEEE),
+                        backgroundImage:
+                            hasAvatar ? NetworkImage(avatarUrl!) : null,
+                        child: hasAvatar
+                            ? null
+                            : const Icon(Icons.person_outline,
+                                color: Colors.grey, size: 30),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -145,7 +180,7 @@ class _MineViewState extends State<MineView> {
                               GestureDetector(
                                 onTap: _navigateToUserInfo,
                                 child: Text(
-                                  tokenManager.getNickname(),
+                                  profile?.displayName ?? tokenManager.getNickname(),
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -162,9 +197,9 @@ class _MineViewState extends State<MineView> {
                                   color: Colors.orange[100],
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Text(
-                                  'Lv.4',
-                                  style: TextStyle(
+                                child: Text(
+                                  'Lv.${profile?.cookingLevel ?? 4}',
+                                  style: const TextStyle(
                                     color: Colors.orange,
                                     fontSize: 10,
                                   ),
@@ -173,7 +208,7 @@ class _MineViewState extends State<MineView> {
                             ],
                           ),
                           Text(
-                            tokenManager.getSign(),
+                            profile?.displaySign ?? tokenManager.getSign(),
                             style: const TextStyle(
                               color: Colors.grey,
                               fontSize: 12,
@@ -188,13 +223,13 @@ class _MineViewState extends State<MineView> {
                                 color: Colors.orange,
                               ),
                               const SizedBox(width: 4),
-                              const Text(
-                                '连续签到 3 天',
-                                style: TextStyle(fontSize: 12),
+                              Text(
+                                '连续签到 ${profile?.checkInDays ?? 0} 天',
+                                style: const TextStyle(fontSize: 12),
                               ),
                               const Spacer(),
-                              const Text(
-                                '成长值 680/1000',
+                              Text(
+                                '成长值 ${profile?.growthValue ?? 0}/1000',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey,
@@ -204,7 +239,7 @@ class _MineViewState extends State<MineView> {
                           ),
                           const SizedBox(height: 4),
                           LinearProgressIndicator(
-                            value: 0.68,
+                            value: profile?.growthProgress ?? 0,
                             backgroundColor: Colors.grey[200],
                             color: Colors.orange,
                             minHeight: 4,
@@ -287,9 +322,9 @@ class _MineViewState extends State<MineView> {
                 "我的积分",
                 style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
-              const Text(
-                "1280 积分",
-                style: TextStyle(
+              Text(
+                "${_profile?.points ?? 1280} 积分",
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

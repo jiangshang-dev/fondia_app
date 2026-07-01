@@ -14,6 +14,11 @@ class HttpConstants {
   static const String EMAIL_LOGIN = '/user/auth/emailLogin';
   static const String PASSWORD_LOGIN = '/user/auth/login';
 
+  // 用户资料
+  static const String USER_PROFILE = '/user/profile';
+  static const String USER_UPLOAD = '/user/upload';
+  static const String USER_INFO = '/user/auth/info';
+
   // 菜谱/菜品
   static const String CUISINE_CATEGORY = '/cuisine/category';
   static const String CUISINE_CATEGORY_HOT = '/cuisine/category/hot';

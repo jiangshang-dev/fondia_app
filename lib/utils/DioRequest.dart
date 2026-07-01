@@ -27,11 +27,8 @@ class DioRequest {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (request, handler) {
-          // 注入token request.headers["Authorization"]  Bearer token;
           if (tokenManager.getToken().isNotEmpty) {
-            request.headers = {
-              "Authorization": "Bearer ${tokenManager.getToken()}",
-            };
+            request.headers['Authorization'] = 'Bearer ${tokenManager.getToken()}';
           }
           handler.next(request);
         },
@@ -79,8 +76,25 @@ class DioRequest {
     return _handleResponse(_dio.post(url, data: data));
   }
 
+  Future<dynamic> put(String url, {Map<String, dynamic>? data}) {
+    return _handleResponse(_dio.put(url, data: data));
+  }
+
   Future<dynamic> delete(String url) {
     return _handleResponse(_dio.delete(url));
+  }
+
+  Future<dynamic> uploadFile(
+    String url,
+    String filePath, {
+    String fieldName = 'file',
+    String? biz,
+  }) {
+    final formData = FormData.fromMap({
+      fieldName: MultipartFile.fromFileSync(filePath),
+      if (biz != null) 'biz': biz,
+    });
+    return _handleResponse(_dio.post(url, data: formData));
   }
 
   // 进一步处理返回结果的函数

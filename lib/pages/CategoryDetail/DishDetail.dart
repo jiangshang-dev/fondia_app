@@ -110,6 +110,7 @@ class _DishDetailState extends State<DishDetail> {
       });
     } catch (e) {
       if (!mounted) return;
+      await _loadInteractionState();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
@@ -131,11 +132,14 @@ class _DishDetailState extends State<DishDetail> {
       setState(() {
         _isCollected = result.active;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.active ? '收藏成功' : '已取消收藏')),
-      );
+      if (result.active) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('收藏成功')),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
+      await _loadInteractionState();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
