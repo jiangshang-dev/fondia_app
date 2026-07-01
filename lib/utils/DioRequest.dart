@@ -12,11 +12,11 @@ class DioRequest {
   DioRequest() {
     _dio.options
       ..baseUrl = GlobalConstants.BASE_URL
-    // 连接时间
+      // 连接时间
       ..connectTimeout = Duration(seconds: GlobalConstants.TIME_OUT)
-    // 超时时间
+      // 超时时间
       ..sendTimeout = Duration(seconds: GlobalConstants.TIME_OUT)
-    // 接收时间
+      // 接收时间
       ..receiveTimeout = Duration(seconds: GlobalConstants.TIME_OUT);
     // 添加拦截器
     _addInterceptors();
@@ -79,6 +79,10 @@ class DioRequest {
     return _handleResponse(_dio.post(url, data: data));
   }
 
+  Future<dynamic> delete(String url) {
+    return _handleResponse(_dio.delete(url));
+  }
+
   // 进一步处理返回结果的函数
   Future<dynamic> _handleResponse(Future<Response<dynamic>> task) async {
     try {
@@ -90,7 +94,10 @@ class DioRequest {
       }
       // 抛出异常
       // throw Exception(data['msg']??'加载数据异常');
-      throw DioException(requestOptions: result.requestOptions, message: data['msg']??'加载数据异常');
+      throw DioException(
+        requestOptions: result.requestOptions,
+        message: data['msg'] ?? '加载数据异常',
+      );
     } catch (e) {
       // throw Exception(e);
       // 不改变原来抛出的异常类型

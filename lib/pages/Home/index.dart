@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/api/cuisine.dart';
 import 'package:fondia/components/Home/Slider.dart';
 import 'package:fondia/components/common/SectionTitleBar.dart';
+import 'package:fondia/models/recipe_models.dart';
+import 'package:fondia/pages/CategoryDetail/DishDetail.dart';
 import 'package:fondia/pages/CategoryDetail/index.dart';
+import 'package:fondia/utils/recipe_image.dart';
 
-// 首页
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
 
@@ -12,281 +15,270 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  final List<Map<String, String>> _hotCuisineList = [
-    {'name': '东北菜', 'image': 'lib/assets/addr/dongbei.png'},
-    {'name': '台湾菜', 'image': 'lib/assets/addr/taipei.png'},
-    {'name': '赤峰菜', 'image': 'lib/assets/addr/chifeng.png'},
-    {'name': '北京菜', 'image': 'lib/assets/addr/tiantan.png'},
-    {'name': '川菜', 'image': 'lib/assets/addr/chuan.png'},
-  ];
+  List<CategoryBrief> _hotCuisines = [];
+  List<CategoryBrief> _allCuisines = [];
+  List<RecipeListItem> _recommendList = [];
+  bool _loading = true;
 
-  final List<Map<String, String>> _cuisineList = [
-    {'name': '东北菜', 'icon': '❄️'},
-    {'name': '台湾菜', 'icon': '🗼'},
-    {'name': '赤峰菜', 'icon': '🏕️'},
-    {'name': '北京菜', 'icon': '🏯'},
-    {'name': '川菜', 'icon': '🌶️'},
-    {'name': '粤菜', 'icon': '🥟'},
-    {'name': '鲁菜', 'icon': '🏛️'},
-    {'name': '苏菜', 'icon': '🪷'},
-    {'name': '浙菜', 'icon': '🎋'},
-    {'name': '湘菜', 'icon': '🌶️'},
-    {'name': '闽菜', 'icon': '🏠'},
-    {'name': '徽菜', 'icon': '🏰'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
 
-  final List<Map<String, String>> _recommendList = [
-    {'name': '地三鲜', 'desc': '东北经典下饭菜', 'likes': '2.1万', 'image': ''},
-    {'name': '台湾牛肉面', 'desc': '汤鲜味美 · 一碗满足', 'likes': '1.8万', 'image': ''},
-    {'name': '北京烤鸭', 'desc': '外酥里嫩 · 皮脆肉香', 'likes': '2.6万', 'image': ''},
-    {'name': '赤峰手把肉', 'desc': '原汁原味 · 鲜香不腻', 'likes': '1.3万', 'image': ''},
-  ];
+  Future<void> _loadData() async {
+    try {
+      final results = await Future.wait([
+        CuisineApi.listHotCuisines(),
+        CuisineApi.listAllCuisines(),
+        CuisineApi.pageRecipes(pageNo: 1, pageSize: 4),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _hotCuisines = results[0] as List<CategoryBrief>;
+        _allCuisines = results[1] as List<CategoryBrief>;
+        _recommendList =
+            (results[2] as RecipePage).records;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  void _openCuisineDetail(int cuisineId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CategoryDetailView(cuisineId: cuisineId),
+      ),
+    );
+  }
+
+  void _openRecipeDetail(int recipeId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => DishDetail(recipeId: recipeId)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          // 轮播图
-          Padding(
-            padding: EdgeInsets.all(10),
-            // padding: EdgeInsets.symmetric(horizontal: 16),
-            child: SliderView(),
-          ),
-          SizedBox(height: 24),
-          // 热门菜系
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Image.asset('lib/assets/hot.png', width: 32, height: 32),
-                    SizedBox(width: 8),
-                    Text(
-                      '热门菜系',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                // Row(
-                //   children: [
-                //     Text(
-                //       '全部菜系',
-                //       style: TextStyle(color: Colors.grey[500], fontSize: 16),
-                //     ),
-                //     Icon(Icons.chevron_right, color: Colors.grey[500]),
-                //   ],
-                // ),
-              ],
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(10),
+              child: SliderView(),
             ),
-          ),
-          SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child:
-            // ListView.builder(
-            //   scrollDirection: Axis.horizontal,
-            //   itemCount: 5,
-            // )
-            LayoutBuilder(
-              builder: (context, constraints) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  // 分类详情跳转
-                  children: _hotCuisineList.map((item) {
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CategoryDetailView(
-                              // 这里传递参数，例如菜品名称
-                              // dishName: item['name'],
-                            ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Image.asset('lib/assets/hot.png', width: 32, height: 32),
+                  const SizedBox(width: 8),
+                  const Text(
+                    '热门菜系',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(color: Colors.orange),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final list = _hotCuisines.take(5).toList();
+                    if (list.isEmpty) {
+                      return const Text('暂无热门菜系',
+                          style: TextStyle(color: Colors.grey));
+                    }
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: list.map((item) {
+                        return GestureDetector(
+                          onTap: () => _openCuisineDetail(item.id),
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                width: 70,
+                                height: 100,
+                                child: RecipeImage(
+                                  url: item.coverImage,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                item.name,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         );
-                      },
+                      }).toList(),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 24),
+            SectionTitleBar(title: '菜系分类', padding: EdgeInsets.zero),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  mainAxisExtent: 95,
+                ),
+                itemCount: _allCuisines.length,
+                itemBuilder: (context, index) {
+                  final item = _allCuisines[index];
+                  return GestureDetector(
+                    onTap: () => _openCuisineDetail(item.id),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Center(child: cuisineIconWidget(item.icon)),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item.name,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Icon(Icons.keyboard_arrow_down,
+                  color: Colors.grey[500], size: 32),
+            ),
+            const SizedBox(height: 24),
+            SectionTitleBar(
+              title: '今日推荐',
+              actionText: '换一换',
+              padding: EdgeInsets.zero,
+              onActionTap: _loadData,
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: _recommendList.length,
+                itemBuilder: (context, index) {
+                  final item = _recommendList[index];
+                  return GestureDetector(
+                    onTap: () => _openRecipeDetail(item.id),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 70,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              image: DecorationImage(
-                                image: AssetImage(item['image']!),
-                                fit: BoxFit.cover,
+                          Expanded(
+                            child: RecipeImage(
+                              url: item.coverImage,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(16),
                               ),
                             ),
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            item['name']!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.title,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  item.subtitle ?? '',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.favorite_border,
+                                        size: 14, color: Colors.red),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      formatCount(item.likeCount),
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-          ),
-          SizedBox(height: 24),
-          // 菜系分类
-          SectionTitleBar(title: '菜系分类', padding: EdgeInsets.zero),
-          SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisExtent: 95, // ✅ 关键：固定每个格子高度
+                    ),
+                  );
+                },
               ),
-              itemCount: _cuisineList.length,
-              itemBuilder: (context, index) {
-                final item = _cuisineList[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryDetailView(
-                          // cuisine: item,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Center(
-                          child: Text(
-                            item['icon']!,
-                            style: TextStyle(fontSize: 26),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        item['name']!,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                );
-              },
             ),
-          ),
-          SizedBox(height: 8),
-          // 向下箭头查看更多
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Icon(
-              Icons.keyboard_arrow_down,
-              color: Colors.grey[500],
-              size: 32,
-            ),
-          ),
-          SizedBox(height: 24),
-          // 今日推荐
-          SectionTitleBar(
-            title: '今日推荐',
-            actionText: '换一换',
-            padding: EdgeInsets.zero,
-          ),
-          SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.85,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: _recommendList.length,
-              itemBuilder: (context, index) {
-                final item = _recommendList[index];
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 140,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(16),
-                          ),
-                          image: DecorationImage(
-                            image: NetworkImage(item['image']!),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item['name']!,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              item['desc']!,
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 12,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            SizedBox(height: 8),
-                            Row(children: [SizedBox(width: 4)]),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          SizedBox(height: 24),
-        ],
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }

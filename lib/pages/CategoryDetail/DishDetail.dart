@@ -1,127 +1,160 @@
 
 import 'package:flutter/material.dart';
+import 'package:fondia/api/cuisine.dart';
+import 'package:fondia/models/recipe_models.dart';
+import 'package:fondia/pages/CategoryDetail/CommentSection.dart';
+import 'package:fondia/utils/recipe_image.dart';
 
 class DishDetail extends StatefulWidget {
-  const DishDetail({super.key});
+  final int recipeId;
+
+  const DishDetail({super.key, required this.recipeId});
 
   @override
   State<DishDetail> createState() => _DishDetailState();
 }
 
 class _DishDetailState extends State<DishDetail> {
+  RecipeDetail? _detail;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDetail();
+  }
+
+  Future<void> _loadDetail() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final detail = await CuisineApi.getRecipeDetail(widget.recipeId);
+      CuisineApi.incrementView(widget.recipeId).catchError((_) {});
+      if (!mounted) return;
+      setState(() {
+        _detail = detail;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: MediaQuery.removePadding(
-        context: context,
-        removeTop: true, // 移除顶部安全区域遮挡，让视频顶格
-        child: SingleChildScrollView(
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator(color: Colors.orange)),
+      );
+    }
+
+    if (_detail == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
+        body: Center(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. 视频播放器区域
-              _buildVideoPlayer(),
-
-              // 2. 标题与描述
-              _buildTitleSection(),
-
-              // 3. 烹饪信息栏 (时间/难度/热量)
-              _buildInfoBar(),
-
-              const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
-
-              // 4. 食材准备
-              _buildIngredientsSection(),
-
-              const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
-
-              // 5. 图文步骤
-              _buildStepsSection(),
-
-              // 6. 评论区
-              _buildCommentSection(),
+              Text(_error ?? '加载失败'),
+              TextButton(onPressed: _loadDetail, child: const Text('重试')),
             ],
           ),
         ),
+      );
+    }
+
+    final detail = _detail!;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildVideoPlayer(context, detail)),
+          SliverToBoxAdapter(child: _buildTitleSection(detail)),
+          SliverToBoxAdapter(child: _buildInfoBar(detail)),
+          const SliverToBoxAdapter(
+            child: Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
+          ),
+          SliverToBoxAdapter(child: _buildIngredientsSection(detail)),
+          const SliverToBoxAdapter(
+            child: Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
+          ),
+          SliverToBoxAdapter(child: _buildStepsSection(detail)),
+          SliverToBoxAdapter(
+            child: CommentSection(
+              recipeId: widget.recipeId,
+              commentCount: detail.commentCount,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // 视频播放器模拟组件
-  Widget _buildVideoPlayer() {
-    return Stack(
-      children: [
-        AspectRatio(
-          aspectRatio: 16 / 10,
-          child: Image.network(
-            'https://placeholder.com/600x400', // 这里放红烧肉封面图
-            fit: BoxFit.cover,
-          ),
-        ),
-        // 视频遮罩与控制按钮
-        Positioned.fill(
-          child: Container(
-            color: Colors.black.withOpacity(0.1),
-            child: const Center(
-              child: Icon(Icons.play_circle_fill, color: Colors.white, size: 64),
+  Widget _buildVideoPlayer(BuildContext context, RecipeDetail detail) {
+    final width = MediaQuery.of(context).size.width;
+    final headerHeight = width * 10 / 16;
+
+    return SizedBox(
+      width: width,
+      height: headerHeight,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          RecipeImage(url: detail.coverImage, fit: BoxFit.cover),
+          if (detail.videoUrl != null && detail.videoUrl!.isNotEmpty)
+            Container(
+              color: Colors.black.withValues(alpha: 0.1),
+              alignment: Alignment.center,
+              child: const Icon(Icons.play_circle_fill,
+                  color: Colors.white, size: 64),
+            ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 8,
+            right: 8,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Row(
+                  children: [
+                    Icon(Icons.star_border, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text('收藏', style: TextStyle(color: Colors.white)),
+                    SizedBox(width: 16),
+                    Icon(Icons.share, color: Colors.white),
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
-        // 返回键与收藏分享
-        Positioned(
-          top: 44,
-          left: 16,
-          right: 16,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              Row(
-                children: [
-                  Icon(Icons.star_border, color: Colors.white),
-                  SizedBox(width: 4),
-                  Text('收藏', style: TextStyle(color: Colors.white)),
-                  SizedBox(width: 16),
-                  Icon(Icons.share, color: Colors.white),
-                ],
-              )
-            ],
+          Positioned(
+            right: 16,
+            top: headerHeight * 0.35,
+            child: Column(
+              children: [
+                _buildVideoSideAction(
+                    Icons.favorite, formatCount(detail.likeCount)),
+                _buildVideoSideAction(
+                    Icons.message, formatCount(detail.commentCount)),
+              ],
+            ),
           ),
-        ),
-        // 视频进度条模拟
-        Positioned(
-          bottom: 12,
-          left: 16,
-          right: 16,
-          child: Row(
-            children: [
-              const Icon(Icons.play_arrow, color: Colors.white, size: 20),
-              const Text(' 00:12', style: TextStyle(color: Colors.white, fontSize: 12)),
-              Expanded(
-                child: Slider(value: 0.1, onChanged: (v) {}, activeColor: Colors.orange, inactiveColor: Colors.white30),
-              ),
-              const Text('03:28 ', style: TextStyle(color: Colors.white, fontSize: 12)),
-              const Icon(Icons.fullscreen, color: Colors.white, size: 20),
-            ],
-          ),
-        ),
-        // 右侧侧边栏 (点赞/评论)
-        Positioned(
-          right: 16,
-          top: 100,
-          child: Column(
-            children: [
-              _buildVideoSideAction(Icons.favorite, '2.1万'),
-              _buildVideoSideAction(Icons.message, '856'),
-              // _buildVideoSideAction(Icons. Assignment_turned_in, '做过'),
-            ],
-          ),
-        )
-      ],
+        ],
+      ),
     );
   }
 
@@ -131,46 +164,74 @@ class _DishDetailState extends State<DishDetail> {
       child: Column(
         children: [
           Icon(icon, color: Colors.white, size: 28),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          Text(label,
+              style: const TextStyle(color: Colors.white, fontSize: 12)),
         ],
       ),
     );
   }
 
-  // 标题和标签
-  Widget _buildTitleSection() {
+  Widget _buildTitleSection(RecipeDetail detail) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('红烧肉', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          Text(detail.title,
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Text('肥而不腻，软糯入味，经典家常菜', style: TextStyle(fontSize: 14, color: Colors.grey)),
+          Text(detail.subtitle ?? '',
+              style: const TextStyle(fontSize: 14, color: Colors.grey)),
+          if (detail.description != null && detail.description!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(detail.description!,
+                style: const TextStyle(fontSize: 14, color: Color(0xFF666666),
+                    height: 1.5)),
+          ],
           const SizedBox(height: 12),
-          Row(
-            children: ['东北菜', '家常菜', '炖菜', '咸香味'].map((tag) => Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(4)),
-              child: Text(tag, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            )).toList(),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: detail.tags
+                .map((tag) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(tag,
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.grey)),
+                    ))
+                .toList(),
           ),
         ],
       ),
     );
   }
 
-  // 信息栏
-  Widget _buildInfoBar() {
+  Widget _buildInfoBar(RecipeDetail detail) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildInfoItem(Icons.access_time, '60分钟', '烹饪时间'),
-          _buildInfoItem(Icons.bar_chart, '中等', '难度'),
-          _buildInfoItem(Icons.local_fire_department, '热量约 620 大卡', '每100克'),
+          Expanded(
+            child: _buildInfoItem(Icons.access_time,
+                '${detail.cookMinutes ?? '-'}分钟', '烹饪时间'),
+          ),
+          Expanded(
+            child: _buildInfoItem(Icons.bar_chart,
+                difficultyLabel(detail.difficulty), '难度'),
+          ),
+          Expanded(
+            child: _buildInfoItem(
+              Icons.local_fire_department,
+              detail.calories != null ? '${detail.calories}大卡' : '-',
+              '每100克',
+            ),
+          ),
         ],
       ),
     );
@@ -179,15 +240,25 @@ class _DishDetailState extends State<DishDetail> {
   Widget _buildInfoItem(IconData icon, String top, String bottom) {
     return Column(
       children: [
-        Row(children: [Icon(icon, size: 16, color: Colors.orange), Text(' $top', style: const TextStyle(fontWeight: FontWeight.w500))]),
+        Icon(icon, size: 18, color: Colors.orange),
+        const SizedBox(height: 6),
+        Text(
+          top,
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         const SizedBox(height: 4),
-        Text(bottom, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(bottom,
+            style: const TextStyle(fontSize: 11, color: Colors.grey),
+            textAlign: TextAlign.center),
       ],
     );
   }
 
-  // 食材准备
-  Widget _buildIngredientsSection() {
+  Widget _buildIngredientsSection(RecipeDetail detail) {
+    final items = detail.ingredients;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -195,118 +266,114 @@ class _DishDetailState extends State<DishDetail> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text('食材准备', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              Text('2-3人份', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            children: [
+              const Text('食材准备',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(detail.servingSize ?? '',
+                  style: const TextStyle(color: Colors.grey, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 16),
-          _buildIngredientRow('五花肉', '500克', '冰糖', '20克'),
-          _buildIngredientRow('生姜', '4片', '大葱', '1根'),
-          _buildIngredientRow('料酒', '2勺', '老抽', '1勺'),
+          if (items.isEmpty)
+            const Text('暂无食材信息', style: TextStyle(color: Colors.grey))
+          else
+            ...List.generate((items.length / 2).ceil(), (rowIndex) {
+              final left = items[rowIndex * 2];
+              final right = rowIndex * 2 + 1 < items.length
+                  ? items[rowIndex * 2 + 1]
+                  : null;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: _buildIngredientCell(left.name, left.amount)),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: right != null
+                          ? _buildIngredientCell(right.name, right.amount)
+                          : const SizedBox(),
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
     );
   }
 
-  Widget _buildIngredientRow(String n1, String v1, String n2, String v2) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Expanded(child: Row(children: [
-            Container(width: 30, height: 30, decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle)),
-            const SizedBox(width: 8),
-            Text(n1), Spacer(), Text(v1, style: const TextStyle(color: Colors.grey)),
-          ])),
-          const SizedBox(width: 40),
-          Expanded(child: Row(children: [
-            Container(width: 30, height: 30, decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle)),
-            const SizedBox(width: 8),
-            Text(n2), Spacer(), Text(v2, style: const TextStyle(color: Colors.grey)),
-          ])),
-        ],
-      ),
+  Widget _buildIngredientCell(String name, String amount) {
+    return Row(
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.eco, size: 16, color: Colors.orange),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+        Text(amount, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+      ],
     );
   }
 
-  // 图文步骤
-  Widget _buildStepsSection() {
+  Widget _buildStepsSection(RecipeDetail detail) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('图文步骤', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('图文步骤',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          _buildStepItem(1, '五花肉切麻将块，冷水下锅，加入姜片、料酒，焯水去腥，捞出沥干。', '焯水时间：5分钟'),
-          _buildStepItem(2, '锅中放少许油，加入冰糖，小火炒至融化，变成枣红色。', '小火慢炒，注意别糊'),
+          if (detail.steps.isEmpty)
+            const Text('暂无步骤信息', style: TextStyle(color: Colors.grey))
+          else
+            ...detail.steps.map(_buildStepItem),
         ],
       ),
     );
   }
 
-  Widget _buildStepItem(int step, String desc, String tip) {
+  Widget _buildStepItem(RecipeStep step) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(radius: 10, backgroundColor: Colors.orange, child: Text('$step', style: const TextStyle(color: Colors.white, fontSize: 12))),
+          CircleAvatar(
+            radius: 10,
+            backgroundColor: Colors.orange,
+            child: Text('${step.stepNo}',
+                style: const TextStyle(color: Colors.white, fontSize: 12)),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network('https://placeholder.com/300x150', fit: BoxFit.cover),
-                ),
-                const SizedBox(height: 8),
-                Text(desc, style: const TextStyle(height: 1.5)),
-                Text(tip, style: const TextStyle(color: Colors.grey, fontSize: 12, height: 1.8)),
+                if (step.image != null && step.image!.isNotEmpty)
+                  RecipeImage(
+                    url: step.image,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                if (step.image != null && step.image!.isNotEmpty)
+                  const SizedBox(height: 8),
+                Text(step.content, style: const TextStyle(height: 1.5)),
+                if (step.tip != null && step.tip!.isNotEmpty)
+                  Text(step.tip!,
+                      style: const TextStyle(
+                          color: Colors.grey, fontSize: 12, height: 1.8)),
               ],
             ),
-          )
-        ],
-      ),
-    );
-  }
-
-  // 评论区简易模拟
-  Widget _buildCommentSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: const Color(0xFFFAFAFA),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                child: const Text('发表评论...', style: TextStyle(color: Colors.grey, fontSize: 14)),
-              )),
-              const SizedBox(width: 16),
-              const Text('发送', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-            ],
           ),
-          const SizedBox(height: 20),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const CircleAvatar(radius: 18, backgroundImage: NetworkImage('https://placeholder.com/50')),
-              const SizedBox(width: 12),
-              Expanded(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('小雪爱做饭  Lv.4', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text('这个红烧肉做得太棒了，按照步骤来，软糯入味，全家都爱吃！'),
-                ],
-              ))
-            ],
-          )
         ],
       ),
     );

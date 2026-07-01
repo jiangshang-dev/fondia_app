@@ -13,5 +13,20 @@ class HttpConstants {
   static const String SEND_EMAIL_CODE = '/user/auth/sendEmailCode';
   static const String EMAIL_LOGIN = '/user/auth/emailLogin';
   static const String PASSWORD_LOGIN = '/user/auth/login';
+
+  // 菜谱/菜品
+  static const String CUISINE_CATEGORY = '/cuisine/category';
+  static const String CUISINE_CATEGORY_HOT = '/cuisine/category/hot';
+  static const String CUISINE_CATEGORY_LIST = '/cuisine/category/list';
+  static const String CUISINE_RECIPE = '/cuisine/recipe';
+  static const String CUISINE_RECIPE_LIST = '/cuisine/recipe/list';
+  static const String CUISINE_TAG_LIST = '/cuisine/tag/list';
+
+  // 互动/评论
+  static const String INTERACTION_COMMENT_TREE = '/interaction/comment/tree';
+  static const String INTERACTION_COMMENT_ADD = '/interaction/comment/add';
+  static const String INTERACTION_COMMENT_REPLY = '/interaction/comment/reply';
+  static const String INTERACTION_COMMENT_REACTION = '/interaction/comment/reaction';
+  static const String INTERACTION_COMMENT = '/interaction/comment';
 }
 

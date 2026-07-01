@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/api/cuisine.dart';
+import 'package:fondia/models/recipe_models.dart';
 import 'package:fondia/pages/CategoryDetail/DishDetail.dart';
+import 'package:fondia/pages/CategoryDetail/index.dart';
+import 'package:fondia/utils/recipe_image.dart';
 
 class CategoryView extends StatefulWidget {
   const CategoryView({super.key});
@@ -9,272 +13,258 @@ class CategoryView extends StatefulWidget {
 }
 
 class _CategoryViewState extends State<CategoryView> {
-  int _selectedCategoryIndex = 0;
+  List<CategoryBrief> _cuisines = [];
+  CategoryTree? _tree;
+  int _selectedIndex = 0;
+  bool _loadingCuisines = true;
+  bool _loadingTree = false;
+  String? _error;
 
-  final List<Map<String, dynamic>> _leftCategories = [
-    {'name': '地方菜系', 'selected': true},
-    {'name': '川菜', 'selected': false},
-    {'name': '粤菜', 'selected': false},
-    {'name': '鲁菜', 'selected': false},
-    {'name': '苏菜', 'selected': false},
-    {'name': '浙菜', 'selected': false},
-    {'name': '闽菜', 'selected': false},
-    {'name': '湘菜', 'selected': false},
-    {'name': '徽菜', 'selected': false},
-    {'name': '京菜', 'selected': false},
-    {'name': '东北菜', 'selected': false},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadCuisines();
+  }
 
-  final List<Map<String, dynamic>> _rightContent = [
-    {
-      'title': '主食',
-      'items': [
-        {
-          'name': '米饭',
-          'image':
-              '',
-        },
-        {
-          'name': '面食',
-          'image':
-              '',
-        },
-        {
-          'name': '面条',
-          'image':
-              '',
-        },
-        {
-          'name': '粥',
-          'image':
-              '',
-        },
-        {
-          'name': '饺子',
-          'image':
-              '',
-        },
-        {
-          'name': '包子',
-          'image':
-              '',
-        },
-        {
-          'name': '炒饭',
-          'image':
-              '',
-        },
-        {
-          'name': '饼',
-          'image':
-              '',
-        },
-      ],
-    },
-    {
-      'title': '菜',
-      'items': [
-        {
-          'name': '家常菜',
-          'image':
-              '',
-        },
-        {
-          'name': '凉菜',
-          'image':
-              '',
-        },
-        {
-          'name': '汤羹',
-          'image':
-              '',
-        },
-        {
-          'name': '红烧',
-          'image':
-              '',
-        },
-        {
-          'name': '炒菜',
-          'image':
-              '',
-        },
-        {
-          'name': '蒸菜',
-          'image':
-              '',
-        },
-        {
-          'name': '炖菜',
-          'image':
-              '',
-        },
-        {
-          'name': '火锅',
-          'image':
-              '',
-        },
-        {
-          'name': '烧烤',
-          'image':
-              '',
-        },
-        {
-          'name': '煎炸',
-          'image':
-              '',
-        },
-        {
-          'name': '腌制',
-          'image':
-              '',
-        },
-        {
-          'name': '素菜',
-          'image':
-              '',
-        },
-      ],
-    },
-  ];
+  Future<void> _loadCuisines() async {
+    setState(() {
+      _loadingCuisines = true;
+      _error = null;
+    });
+    try {
+      final list = await CuisineApi.listAllCuisines();
+      if (!mounted) return;
+      setState(() {
+        _cuisines = list;
+        _loadingCuisines = false;
+      });
+      if (list.isNotEmpty) {
+        _loadTree(list.first.id);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingCuisines = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  Future<void> _loadTree(int cuisineId) async {
+    setState(() {
+      _loadingTree = true;
+      _error = null;
+    });
+    try {
+      final tree = await CuisineApi.getCategoryTree(cuisineId);
+      if (!mounted) return;
+      setState(() {
+        _tree = tree;
+        _loadingTree = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingTree = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  void _onSelectCuisine(int index) {
+    if (index == _selectedIndex) return;
+    setState(() => _selectedIndex = index);
+    _loadTree(_cuisines[index].id);
+  }
+
+  void _openRecipeDetail(int recipeId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => DishDetail(recipeId: recipeId)),
+    );
+  }
+
+  void _openCuisineDetail(int cuisineId, {int? subType}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CategoryDetailView(
+          cuisineId: cuisineId,
+          initialSubType: subType,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingCuisines) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Colors.orange)),
+      );
+    }
+
+    if (_cuisines.isEmpty) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error ?? '暂无菜系数据'),
+              const SizedBox(height: 12),
+              TextButton(onPressed: _loadCuisines, child: const Text('重试')),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final sections = _tree?.sections ?? [];
+
     return Scaffold(
       backgroundColor: Colors.white,
-
-      body: Column(
+      body: Row(
         children: [
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 100,
-                  color: Colors.grey[50],
-                  child: ListView.builder(
-                    itemCount: _leftCategories.length,
-                    itemBuilder: (context, index) {
-                      final category = _leftCategories[index];
-                      final isSelected = index == _selectedCategoryIndex;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedCategoryIndex = index;
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected ? Colors.white : Colors.transparent,
-                            border: isSelected ? Border(left: BorderSide(color: Colors.orange, width: 4)) : null,
-                          ),
-                          child: Text(
-                            category['name'],
-                            style: TextStyle(
-                              color: isSelected ? Colors.black : Colors.grey[600],
-                              fontSize: 15,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      );
-                    },
+          Container(
+            width: 100,
+            color: Colors.grey[50],
+            child: ListView.builder(
+              itemCount: _cuisines.length,
+              itemBuilder: (context, index) {
+                final cuisine = _cuisines[index];
+                final isSelected = index == _selectedIndex;
+                return GestureDetector(
+                  onTap: () => _onSelectCuisine(index),
+                  onLongPress: () => _openCuisineDetail(cuisine.id),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.white : Colors.transparent,
+                      border: isSelected
+                          ? const Border(
+                              left: BorderSide(color: Colors.orange, width: 4),
+                            )
+                          : null,
+                    ),
+                    child: Text(
+                      cuisine.name,
+                      style: TextStyle(
+                        color: isSelected ? Colors.black : Colors.grey[600],
+                        fontSize: 15,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(16),
-                    itemCount: _rightContent.length,
-                    itemBuilder: (context, index) {
-                      final section = _rightContent[index];
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                );
+              },
+            ),
+          ),
+          Expanded(
+            child: _loadingTree
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.orange),
+                  )
+                : _error != null && sections.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_error!),
+                            TextButton(
+                              onPressed: () =>
+                                  _loadTree(_cuisines[_selectedIndex].id),
+                              child: const Text('重试'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: sections.length,
+                        itemBuilder: (context, index) {
+                          final section = sections[index];
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                section['title'],
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '更多',
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 16),
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 4,
-                                    mainAxisExtent: 100, // 固定高度为100（图片60 + 间距8 + 文字高度约20 + 缓冲）
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12
-                                ),
-                            itemCount: section['items'].length,
-                            itemBuilder: (context, itemIndex) {
-                              final item = section['items'][itemIndex];
-                              return GestureDetector(
-                                onTap: () {
-                                  // 执行跳转并传参
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const DishDetail(
-                                        // 这里传递参数，例如菜品名称
-                                        // dishName: item['name'],
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    section.title,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => _openCuisineDetail(
+                                      _cuisines[_selectedIndex].id,
+                                      subType: section.subType,
+                                    ),
+                                    child: Text(
+                                      '更多',
+                                      style: TextStyle(
+                                        color: Colors.grey[500],
+                                        fontSize: 14,
                                       ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 4,
+                                  mainAxisExtent: 100,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                ),
+                                itemCount: section.recipes.length,
+                                itemBuilder: (context, itemIndex) {
+                                  final item = section.recipes[itemIndex];
+                                  return GestureDetector(
+                                    onTap: () => _openRecipeDetail(item.id),
+                                    child: Column(
+                                      children: [
+                                        SizedBox(
+                                          width: 60,
+                                          height: 60,
+                                          child: RecipeImage(
+                                            url: item.coverImage,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          item.title,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
                                     ),
                                   );
                                 },
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      width: 60,
-                                      height: 60,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        image: DecorationImage(
-                                          image: NetworkImage(item['image']),
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      item['name'],
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                          SizedBox(height: 24),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                          );
+                        },
+                      ),
           ),
         ],
       ),
