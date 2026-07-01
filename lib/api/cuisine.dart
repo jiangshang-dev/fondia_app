@@ -58,15 +58,28 @@ class CuisineApi {
   }
 
   /// 菜谱详情
-  static Future<RecipeDetail> getRecipeDetail(int recipeId) async {
+  static Future<RecipeDetail> getRecipeDetail(String recipeId) async {
     final result =
         await _http.get('${HttpConstants.CUISINE_RECIPE}/$recipeId');
     return RecipeDetail.fromJson(result as Map<String, dynamic>);
   }
 
   /// 增加浏览量
-  static Future<void> incrementView(int recipeId) async {
+  static Future<void> incrementView(String recipeId) async {
     await _http.post('${HttpConstants.CUISINE_RECIPE}/$recipeId/view');
+  }
+
+  /// 解析阿里云 VOD 视频播放地址（兜底）
+  static Future<String?> resolveVideoPlayUrl(String videoId) async {
+    if (videoId.isEmpty) return null;
+    final result = await _http.get(
+      HttpConstants.CUISINE_RECIPE_VIDEO_PLAY,
+      params: {'videoId': videoId},
+    );
+    if (result is Map<String, dynamic>) {
+      return result['playUrl']?.toString();
+    }
+    return null;
   }
 
   static List<T> _parseList<T>(

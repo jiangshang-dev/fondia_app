@@ -58,7 +58,7 @@ class InteractionApi {
     return page.total;
   }
 
-  static Future<ToggleInteractionResult> toggleCollect(int recipeId) async {
+  static Future<ToggleInteractionResult> toggleCollect(String recipeId) async {
     final result = await _http.post(
       HttpConstants.INTERACTION_COLLECT_TOGGLE,
       data: {'recipeId': recipeId},
@@ -66,7 +66,7 @@ class InteractionApi {
     return ToggleInteractionResult.fromJson(result as Map<String, dynamic>);
   }
 
-  static Future<ToggleInteractionResult> toggleLike(int recipeId) async {
+  static Future<ToggleInteractionResult> toggleLike(String recipeId) async {
     final result = await _http.post(
       HttpConstants.INTERACTION_LIKE_TOGGLE,
       data: {'recipeId': recipeId},
@@ -74,7 +74,7 @@ class InteractionApi {
     return ToggleInteractionResult.fromJson(result as Map<String, dynamic>);
   }
 
-  static Future<bool> isLiked(int recipeId) async {
+  static Future<bool> isLiked(String recipeId) async {
     final result = await _http.get(
       HttpConstants.INTERACTION_LIKE_STATUS,
       params: {'recipeId': recipeId},
@@ -82,7 +82,7 @@ class InteractionApi {
     return result == true;
   }
 
-  static Future<bool> isCollected(int recipeId) async {
+  static Future<bool> isCollected(String recipeId) async {
     final result = await _http.get(
       HttpConstants.INTERACTION_COLLECT_STATUS,
       params: {'recipeId': recipeId},
@@ -90,7 +90,7 @@ class InteractionApi {
     return result == true;
   }
 
-  static Future<void> recordBrowse(int recipeId) async {
+  static Future<void> recordBrowse(String recipeId) async {
     await _http.post(
       HttpConstants.INTERACTION_BROWSE_RECORD,
       data: {'recipeId': recipeId},
@@ -134,7 +134,7 @@ class InteractionApi {
   // ---------- 评论 ----------
 
   static Future<CommentTreePage> getCommentTree(
-    int recipeId, {
+    String recipeId, {
     int pageNo = 1,
     int pageSize = 20,
   }) async {
@@ -149,7 +149,7 @@ class InteractionApi {
     return CommentTreePage.fromJson(result as Map<String, dynamic>);
   }
 
-  static Future<CommentItem> addComment(int recipeId, String content) async {
+  static Future<CommentItem> addComment(String recipeId, String content) async {
     final result = await _http.post(
       HttpConstants.INTERACTION_COMMENT_ADD,
       data: {'recipeId': recipeId, 'content': content},
@@ -157,7 +157,7 @@ class InteractionApi {
     return CommentItem.fromJson(result as Map<String, dynamic>);
   }
 
-  static Future<CommentItem> replyComment(int parentId, String content) async {
+  static Future<CommentItem> replyComment(String parentId, String content) async {
     final result = await _http.post(
       HttpConstants.INTERACTION_COMMENT_REPLY,
       data: {'parentId': parentId, 'content': content},
@@ -166,7 +166,7 @@ class InteractionApi {
   }
 
   static Future<CommentReactionResult> toggleReaction(
-    int commentId,
+    String commentId,
     int reactionType,
   ) async {
     final result = await _http.post(
@@ -176,7 +176,7 @@ class InteractionApi {
     return CommentReactionResult.fromJson(result as Map<String, dynamic>);
   }
 
-  static Future<void> deleteComment(int commentId) async {
+  static Future<void> deleteComment(String commentId) async {
     await _http.delete('${HttpConstants.INTERACTION_COMMENT}/$commentId');
   }
 }

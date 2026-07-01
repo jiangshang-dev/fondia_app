@@ -25,6 +25,7 @@ class HttpConstants {
   static const String CUISINE_CATEGORY_LIST = '/cuisine/category/list';
   static const String CUISINE_RECIPE = '/cuisine/recipe';
   static const String CUISINE_RECIPE_LIST = '/cuisine/recipe/list';
+  static const String CUISINE_RECIPE_VIDEO_PLAY = '/cuisine/recipe/video/play';
   static const String CUISINE_TAG_LIST = '/cuisine/tag/list';
 
   // 互动/评论

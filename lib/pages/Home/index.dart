@@ -56,7 +56,7 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  void _openRecipeDetail(int recipeId) {
+  void _openRecipeDetail(String recipeId) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => DishDetail(recipeId: recipeId)),

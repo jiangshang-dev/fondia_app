@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:fondia/api/cuisine.dart';
 import 'package:fondia/api/interaction.dart';
 import 'package:fondia/models/recipe_models.dart';
+import 'package:fondia/components/RecipeVideoPlayer.dart';
 import 'package:fondia/pages/CategoryDetail/CommentSection.dart';
 import 'package:fondia/stores/TokenManager.dart';
 import 'package:fondia/utils/recipe_image.dart';
 
 class DishDetail extends StatefulWidget {
-  final int recipeId;
+  final String recipeId;
 
   const DishDetail({super.key, required this.recipeId});
 
@@ -18,6 +19,7 @@ class DishDetail extends StatefulWidget {
 
 class _DishDetailState extends State<DishDetail> {
   RecipeDetail? _detail;
+  String? _playUrl;
   bool _loading = true;
   String? _error;
   bool _isLiked = false;
@@ -39,6 +41,12 @@ class _DishDetailState extends State<DishDetail> {
     });
     try {
       final detail = await CuisineApi.getRecipeDetail(widget.recipeId);
+      var playUrl = detail.playUrl;
+      if ((playUrl == null || playUrl.isEmpty) &&
+          detail.videoId != null &&
+          detail.videoId!.isNotEmpty) {
+        playUrl = await CuisineApi.resolveVideoPlayUrl(detail.videoId!);
+      }
       CuisineApi.incrementView(widget.recipeId).catchError((_) {});
       if (tokenManager.isLoggedIn()) {
         InteractionApi.recordBrowse(widget.recipeId).catchError((_) {});
@@ -46,6 +54,7 @@ class _DishDetailState extends State<DishDetail> {
       if (!mounted) return;
       setState(() {
         _detail = detail;
+        _playUrl = playUrl;
         _likeCount = detail.likeCount ?? 0;
         _loading = false;
       });
@@ -202,75 +211,43 @@ class _DishDetailState extends State<DishDetail> {
   }
 
   Widget _buildVideoPlayer(BuildContext context, RecipeDetail detail) {
-    final width = MediaQuery.of(context).size.width;
-    final headerHeight = width * 10 / 16;
-
-    return SizedBox(
-      width: width,
-      height: headerHeight,
-      child: Stack(
-        fit: StackFit.expand,
+    return RecipeVideoPlayer(
+      key: ValueKey(_playUrl ?? detail.id),
+      playUrl: _playUrl,
+      coverImage: detail.coverImage,
+      onBack: () => Navigator.pop(context),
+      topActions: Row(
         children: [
-          RecipeImage(url: detail.coverImage, fit: BoxFit.cover),
-          if (detail.videoUrl != null && detail.videoUrl!.isNotEmpty)
-            Container(
-              color: Colors.black.withValues(alpha: 0.1),
-              alignment: Alignment.center,
-              child: const Icon(Icons.play_circle_fill,
-                  color: Colors.white, size: 64),
-            ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            left: 8,
-            right: 8,
+          GestureDetector(
+            onTap: _togglingCollect ? null : _toggleCollect,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                Icon(
+                  _isCollected ? Icons.star : Icons.star_border,
+                  color: Colors.white,
                 ),
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: _togglingCollect ? null : _toggleCollect,
-                      child: Row(
-                        children: [
-                          Icon(
-                            _isCollected ? Icons.star : Icons.star_border,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _isCollected ? '已收藏' : '收藏',
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.share, color: Colors.white),
-                  ],
+                const SizedBox(width: 4),
+                Text(
+                  _isCollected ? '已收藏' : '收藏',
+                  style: const TextStyle(color: Colors.white),
                 ),
               ],
             ),
           ),
-          Positioned(
-            right: 16,
-            top: headerHeight * 0.35,
-            child: Column(
-              children: [
-                _buildVideoSideAction(
-                  _isLiked ? Icons.favorite : Icons.favorite_border,
-                  formatCount(_likeCount),
-                  onTap: _toggleLike,
-                ),
-                _buildVideoSideAction(
-                  Icons.message,
-                  formatCount(detail.commentCount),
-                ),
-              ],
-            ),
+          const SizedBox(width: 16),
+          const Icon(Icons.share, color: Colors.white),
+        ],
+      ),
+      sideActions: Column(
+        children: [
+          _buildVideoSideAction(
+            _isLiked ? Icons.favorite : Icons.favorite_border,
+            formatCount(_likeCount),
+            onTap: _toggleLike,
+          ),
+          _buildVideoSideAction(
+            Icons.message,
+            formatCount(detail.commentCount),
           ),
         ],
       ),

@@ -77,7 +77,7 @@ class _CategoryViewState extends State<CategoryView> {
     _loadTree(_cuisines[index].id);
   }
 
-  void _openRecipeDetail(int recipeId) {
+  void _openRecipeDetail(String recipeId) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => DishDetail(recipeId: recipeId)),

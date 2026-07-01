@@ -70,5 +70,10 @@
 	<string>需要访问相册以选择头像图片</string>
 	<key>NSCameraUsageDescription</key>
 	<string>需要使用相机拍摄头像照片</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoadsInMedia</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
