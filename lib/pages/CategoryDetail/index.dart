@@ -434,8 +434,13 @@ class _CategoryDetailViewState extends State<CategoryDetailView>
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.favorite_border,
-                          size: 14, color: Color(0xFFFF4D4D)),
+                      Icon(
+                        (item.likeCount ?? 0) > 0
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        size: 14,
+                        color: const Color(0xFFFF4D4D),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         formatCount(item.likeCount),

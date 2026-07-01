@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/api/interaction.dart';
 import 'package:fondia/pages/Mine/BrowsingHistory.dart';
 import 'package:fondia/pages/Mine/Collection.dart';
 import 'package:fondia/pages/Mine/Feedback.dart';
@@ -19,6 +20,33 @@ class MineView extends StatefulWidget {
 }
 
 class _MineViewState extends State<MineView> {
+  int _collectCount = 0;
+  int _likeCount = 0;
+  int _browseCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInteractionCounts();
+  }
+
+  Future<void> _loadInteractionCounts() async {
+    if (!tokenManager.isLoggedIn()) return;
+    try {
+      final results = await Future.wait([
+        InteractionApi.getMyCollectCount(),
+        InteractionApi.getMyLikeCount(),
+        InteractionApi.getMyBrowseCount(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _collectCount = results[0];
+        _likeCount = results[1];
+        _browseCount = results[2];
+      });
+    } catch (_) {}
+  }
+
   void _navigateToUserInfo() {
     Navigator.push(
       context,
@@ -30,7 +58,18 @@ class _MineViewState extends State<MineView> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const LoginPage()),
-    );
+    ).then((_) => _loadInteractionCounts());
+  }
+
+  void _openPage(Widget page) {
+    if (!tokenManager.isLoggedIn()) {
+      _navigateToLogin();
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => page),
+    ).then((_) => _loadInteractionCounts());
   }
 
   @override
@@ -358,26 +397,16 @@ class _MineViewState extends State<MineView> {
           _buildGridItem(
             Icons.favorite,
             "我的收藏",
-            "56",
+            tokenManager.isLoggedIn() ? '$_collectCount' : '-',
             color: Colors.red,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CollectionView()),
-              );
-            },
+            onTap: () => _openPage(const CollectionView()),
           ),
           _buildGridItem(
             Icons.thumb_up,
             "我的点赞",
-            "128",
+            tokenManager.isLoggedIn() ? '$_likeCount' : '-',
             color: Colors.orange,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LikedView()),
-              );
-            },
+            onTap: () => _openPage(const LikedView()),
           ),
           // _buildGridItem(
           //   Icons.comment,
@@ -394,16 +423,9 @@ class _MineViewState extends State<MineView> {
           _buildGridItem(
             Icons.history,
             "浏览记录",
-            "89",
+            tokenManager.isLoggedIn() ? '$_browseCount' : '-',
             color: Colors.indigo,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const BrowsingHistoryView(),
-                ),
-              );
-            },
+            onTap: () => _openPage(const BrowsingHistoryView()),
           ),
           _buildGridItem(
             Icons.chat,

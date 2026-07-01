@@ -95,43 +95,49 @@ class _HomeViewState extends State<HomeView> {
                 padding: EdgeInsets.all(24),
                 child: CircularProgressIndicator(color: Colors.orange),
               )
+            else if (_hotCuisines.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text('暂无热门菜系', style: TextStyle(color: Colors.grey)),
+              )
             else
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final list = _hotCuisines.take(5).toList();
-                    if (list.isEmpty) {
-                      return const Text('暂无热门菜系',
-                          style: TextStyle(color: Colors.grey));
-                    }
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: list.map((item) {
-                        return GestureDetector(
-                          onTap: () => _openCuisineDetail(item.id),
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                width: 70,
-                                height: 100,
-                                child: RecipeImage(
-                                  url: item.coverImage,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                item.name,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+              SizedBox(
+                height: 130,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _hotCuisines.take(8).length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 16),
+                  itemBuilder: (context, index) {
+                    final item = _hotCuisines[index];
+                    return GestureDetector(
+                      onTap: () => _openCuisineDetail(item.id),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: 70,
+                            height: 100,
+                            child: RecipeImage(
+                              url: item.coverImage,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
-                        );
-                      }).toList(),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: 70,
+                            child: Text(
+                              item.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
                 ),

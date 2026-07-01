@@ -28,5 +28,15 @@ class HttpConstants {
   static const String INTERACTION_COMMENT_REPLY = '/interaction/comment/reply';
   static const String INTERACTION_COMMENT_REACTION = '/interaction/comment/reaction';
   static const String INTERACTION_COMMENT = '/interaction/comment';
+
+  // 互动/收藏、点赞、浏览
+  static const String INTERACTION_COLLECT_MY = '/interaction/collect/my';
+  static const String INTERACTION_COLLECT_TOGGLE = '/interaction/collect/toggle';
+  static const String INTERACTION_COLLECT_STATUS = '/interaction/collect/status';
+  static const String INTERACTION_LIKE_MY = '/interaction/like/my';
+  static const String INTERACTION_LIKE_TOGGLE = '/interaction/like/toggle';
+  static const String INTERACTION_LIKE_STATUS = '/interaction/like/status';
+  static const String INTERACTION_BROWSE_MY = '/interaction/browse/my';
+  static const String INTERACTION_BROWSE_RECORD = '/interaction/browse/record';
 }
 

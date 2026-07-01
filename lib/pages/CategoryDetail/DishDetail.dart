@@ -1,8 +1,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:fondia/api/cuisine.dart';
+import 'package:fondia/api/interaction.dart';
 import 'package:fondia/models/recipe_models.dart';
 import 'package:fondia/pages/CategoryDetail/CommentSection.dart';
+import 'package:fondia/stores/TokenManager.dart';
 import 'package:fondia/utils/recipe_image.dart';
 
 class DishDetail extends StatefulWidget {
@@ -18,6 +20,11 @@ class _DishDetailState extends State<DishDetail> {
   RecipeDetail? _detail;
   bool _loading = true;
   String? _error;
+  bool _isLiked = false;
+  bool _isCollected = false;
+  int _likeCount = 0;
+  bool _togglingLike = false;
+  bool _togglingCollect = false;
 
   @override
   void initState() {
@@ -33,17 +40,107 @@ class _DishDetailState extends State<DishDetail> {
     try {
       final detail = await CuisineApi.getRecipeDetail(widget.recipeId);
       CuisineApi.incrementView(widget.recipeId).catchError((_) {});
+      if (tokenManager.isLoggedIn()) {
+        InteractionApi.recordBrowse(widget.recipeId).catchError((_) {});
+      }
       if (!mounted) return;
       setState(() {
         _detail = detail;
+        _likeCount = detail.likeCount ?? 0;
         _loading = false;
       });
+      _loadInteractionState();
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _loadInteractionState() async {
+    if (!tokenManager.isLoggedIn()) return;
+    try {
+      final results = await Future.wait([
+        InteractionApi.isLiked(widget.recipeId),
+        InteractionApi.isCollected(widget.recipeId),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _isLiked = results[0];
+        _isCollected = results[1];
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _requireLogin() async {
+    if (tokenManager.isLoggedIn()) return;
+    if (!mounted) return;
+    final goLogin = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('提示'),
+        content: const Text('请先登录后再操作'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('去登录')),
+        ],
+      ),
+    );
+    if (goLogin == true && mounted) {
+      await Navigator.pushNamed(context, '/login');
+      await _loadInteractionState();
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (!tokenManager.isLoggedIn()) {
+      await _requireLogin();
+      return;
+    }
+    if (_togglingLike) return;
+    setState(() => _togglingLike = true);
+    try {
+      final result = await InteractionApi.toggleLike(widget.recipeId);
+      if (!mounted) return;
+      setState(() {
+        _isLiked = result.active;
+        _likeCount = result.count;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _togglingLike = false);
+    }
+  }
+
+  Future<void> _toggleCollect() async {
+    if (!tokenManager.isLoggedIn()) {
+      await _requireLogin();
+      return;
+    }
+    if (_togglingCollect) return;
+    setState(() => _togglingCollect = true);
+    try {
+      final result = await InteractionApi.toggleCollect(widget.recipeId);
+      if (!mounted) return;
+      setState(() {
+        _isCollected = result.active;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.active ? '收藏成功' : '已取消收藏')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _togglingCollect = false);
     }
   }
 
@@ -129,13 +226,26 @@ class _DishDetailState extends State<DishDetail> {
                   icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
                 ),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.star_border, color: Colors.white),
-                    SizedBox(width: 4),
-                    Text('收藏', style: TextStyle(color: Colors.white)),
-                    SizedBox(width: 16),
-                    Icon(Icons.share, color: Colors.white),
+                    GestureDetector(
+                      onTap: _togglingCollect ? null : _toggleCollect,
+                      child: Row(
+                        children: [
+                          Icon(
+                            _isCollected ? Icons.star : Icons.star_border,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _isCollected ? '已收藏' : '收藏',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.share, color: Colors.white),
                   ],
                 ),
               ],
@@ -147,9 +257,14 @@ class _DishDetailState extends State<DishDetail> {
             child: Column(
               children: [
                 _buildVideoSideAction(
-                    Icons.favorite, formatCount(detail.likeCount)),
+                  _isLiked ? Icons.favorite : Icons.favorite_border,
+                  formatCount(_likeCount),
+                  onTap: _toggleLike,
+                ),
                 _buildVideoSideAction(
-                    Icons.message, formatCount(detail.commentCount)),
+                  Icons.message,
+                  formatCount(detail.commentCount),
+                ),
               ],
             ),
           ),
@@ -158,15 +273,22 @@ class _DishDetailState extends State<DishDetail> {
     );
   }
 
-  Widget _buildVideoSideAction(IconData icon, String label) {
+  Widget _buildVideoSideAction(
+    IconData icon,
+    String label, {
+    VoidCallback? onTap,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.white, size: 28),
-          Text(label,
-              style: const TextStyle(color: Colors.white, fontSize: 12)),
-        ],
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Icon(icon, color: Colors.white, size: 28),
+            Text(label,
+                style: const TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        ),
       ),
     );
   }
