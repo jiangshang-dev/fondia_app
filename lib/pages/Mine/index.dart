@@ -323,7 +323,7 @@ class _MineViewState extends State<MineView> {
                 style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
               Text(
-                "${_profile?.points ?? 1280} 积分",
+                "${_profile?.points ?? 0} 积分",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
