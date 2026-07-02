@@ -84,6 +84,7 @@ class RecipeListItem {
   final String title;
   final String? subtitle;
   final String? coverImage;
+  final String? cuisineName;
   final int? difficulty;
   final int? cookMinutes;
   final int? likeCount;
@@ -94,6 +95,7 @@ class RecipeListItem {
     required this.title,
     this.subtitle,
     this.coverImage,
+    this.cuisineName,
     this.difficulty,
     this.cookMinutes,
     this.likeCount,
@@ -106,6 +108,7 @@ class RecipeListItem {
       title: json['title']?.toString() ?? '',
       subtitle: json['subtitle']?.toString(),
       coverImage: json['coverImage']?.toString(),
+      cuisineName: json['cuisineName']?.toString(),
       difficulty: json['difficulty'] == null ? null : _asInt(json['difficulty']),
       cookMinutes:
           json['cookMinutes'] == null ? null : _asInt(json['cookMinutes']),

@@ -56,5 +56,8 @@ class HttpConstants {
   static const String SUPPORT_SESSION_ACTIVE = '/support/session/active';
   static const String SUPPORT_SESSION_MESSAGES = '/support/session';
   static const String SUPPORT_SESSION_CLOSE = '/support/session';
+
+  // 搜索
+  static const String SEARCH_RECIPE = '/search/recipe';
 }
 
