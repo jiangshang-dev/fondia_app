@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/api/support.dart';
+import 'package:fondia/l10n/app_localizations.dart';
 import 'package:fondia/pages/Mine/HumanService.dart';
 
 class OnlineServiceView extends StatefulWidget {
@@ -12,8 +13,8 @@ class OnlineServiceView extends StatefulWidget {
 class _OnlineServiceViewState extends State<OnlineServiceView> {
   bool _loading = true;
   String _welcomeTitle = 'Hi，小厨粉';
-  String _welcomeTag = '智能自助';
-  String _welcomeDesc = '我是小厨专属客服，有什么可以帮您的？';
+  String _welcomeTag = '';
+  String _welcomeDesc = '';
   List<Map<String, dynamic>> _faqList = [];
   List<Map<String, dynamic>> _quickEntries = [];
   int _expandedIndex = -1;
@@ -32,10 +33,12 @@ class _OnlineServiceViewState extends State<OnlineServiceView> {
         SupportApi.getQuickEntryList(),
       ]);
       final config = results[0] as Map<String, dynamic>;
+      if (!mounted) return;
+      final l10n = context.l10n;
       setState(() {
         _welcomeTitle = config['welcomeTitle']?.toString() ?? _welcomeTitle;
-        _welcomeTag = config['welcomeTag']?.toString() ?? _welcomeTag;
-        _welcomeDesc = config['welcomeDesc']?.toString() ?? _welcomeDesc;
+        _welcomeTag = config['welcomeTag']?.toString() ?? l10n.welcomeTag;
+        _welcomeDesc = config['welcomeDesc']?.toString() ?? l10n.welcomeDesc;
         _faqList = (results[1] as List).map((e) => Map<String, dynamic>.from(e)).toList();
         _quickEntries = (results[2] as List).map((e) => Map<String, dynamic>.from(e)).toList();
         _loading = false;
@@ -85,6 +88,7 @@ class _OnlineServiceViewState extends State<OnlineServiceView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FA),
       appBar: AppBar(
@@ -94,7 +98,7 @@ class _OnlineServiceViewState extends State<OnlineServiceView> {
           icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: Color(0xFF333333)),
           onPressed: () => Navigator.maybePop(context),
         ),
-        title: const Text('在线客服', style: TextStyle(color: Color(0xFF333333), fontSize: 18, fontWeight: FontWeight.bold)),
+        title: Text(l10n.onlineService, style: const TextStyle(color: Color(0xFF333333), fontSize: 18, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: _loading
@@ -108,14 +112,14 @@ class _OnlineServiceViewState extends State<OnlineServiceView> {
                     const SizedBox(height: 16),
                     _buildServiceGrid(),
                     const SizedBox(height: 20),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 4, bottom: 12),
-                      child: Text('常见问题自助', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 12),
+                      child: Text(l10n.faqSelfService, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
                     ),
                     _buildFaqSection(),
                   ],
                 ),
-                _buildBottomAction(),
+                _buildBottomAction(l10n),
               ],
             ),
     );
@@ -218,7 +222,7 @@ class _OnlineServiceViewState extends State<OnlineServiceView> {
     );
   }
 
-  Widget _buildBottomAction() {
+  Widget _buildBottomAction(AppLocalizations l10n) {
     return Positioned(
       left: 0,
       right: 0,
@@ -235,12 +239,12 @@ class _OnlineServiceViewState extends State<OnlineServiceView> {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [BoxShadow(color: Color(0xFFFF6A1A).withOpacity(0.2), blurRadius: 6, offset: Offset(0, 3))],
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.headset_mic, color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text('召唤人工客服', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                const Icon(Icons.headset_mic, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(l10n.summonHuman, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               ],
             ),
           ),

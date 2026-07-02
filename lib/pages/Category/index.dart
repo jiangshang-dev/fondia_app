@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/api/cuisine.dart';
+import 'package:fondia/l10n/app_localizations.dart';
 import 'package:fondia/models/recipe_models.dart';
 import 'package:fondia/pages/CategoryDetail/DishDetail.dart';
 import 'package:fondia/pages/CategoryDetail/index.dart';
@@ -98,6 +99,7 @@ class _CategoryViewState extends State<CategoryView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (_loadingCuisines) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator(color: Colors.orange)),
@@ -110,9 +112,9 @@ class _CategoryViewState extends State<CategoryView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_error ?? '暂无菜系数据'),
+              Text(_error ?? l10n.noCuisineData),
               const SizedBox(height: 12),
-              TextButton(onPressed: _loadCuisines, child: const Text('重试')),
+              TextButton(onPressed: _loadCuisines, child: Text(l10n.retry)),
             ],
           ),
         ),
@@ -178,7 +180,7 @@ class _CategoryViewState extends State<CategoryView> {
                             TextButton(
                               onPressed: () =>
                                   _loadTree(_cuisines[_selectedIndex].id),
-                              child: const Text('重试'),
+                              child: Text(l10n.retry),
                             ),
                           ],
                         ),
@@ -207,8 +209,8 @@ class _CategoryViewState extends State<CategoryView> {
                                       _cuisines[_selectedIndex].id,
                                       subType: section.subType,
                                     ),
-                                    child: Text(
-                                      '更多',
+            child: Text(
+                                      l10n.more,
                                       style: TextStyle(
                                         color: Colors.grey[500],
                                         fontSize: 14,

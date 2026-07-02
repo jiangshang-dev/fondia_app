@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/components/Home/Top.dart';
+import 'package:fondia/l10n/app_localizations.dart';
 import 'package:fondia/pages/Ai/index.dart';
 import 'package:fondia/pages/Category/index.dart';
 import 'package:fondia/pages/Home/index.dart';
@@ -15,49 +16,31 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
-  final List<Map<String, String>> _tabList = [
-    {
-      'text': '首页',
-      'icon': 'lib/assets/ic_public_home_normal.png',
-      'active_icon': 'lib/assets/ic_public_home_active.png',
-    },
-    {
-      'text': '分类',
-      'icon': 'lib/assets/ic_public_pro_normal.png',
-      'active_icon': 'lib/assets/ic_public_pro_active.png',
-    },
-    {
-      'text': 'AI助手',
-      'icon': 'lib/assets/ic_public_cart_normal.png',
-      'active_icon': 'lib/assets/ic_public_cart_active.png',
-    },
-    {
-      'text': '我的',
-      'icon': 'lib/assets/ic_public_my_normal.png',
-      'active_icon': 'lib/assets/ic_public_my_active.png',
-    },
+  static const _tabIcons = [
+    ('lib/assets/ic_public_home_normal.png', 'lib/assets/ic_public_home_active.png'),
+    ('lib/assets/ic_public_pro_normal.png', 'lib/assets/ic_public_pro_active.png'),
+    ('lib/assets/ic_public_cart_normal.png', 'lib/assets/ic_public_cart_active.png'),
+    ('lib/assets/ic_public_my_normal.png', 'lib/assets/ic_public_my_active.png'),
   ];
 
-  List<BottomNavigationBarItem> _getTabBarWidget() {
-    return List.generate(_tabList.length, (index) {
+  List<BottomNavigationBarItem> _getTabBarWidget(AppLocalizations l10n) {
+    final labels = [l10n.tabHome, l10n.tabCategory, l10n.tabAi, l10n.tabMine];
+    return List.generate(_tabIcons.length, (index) {
       return BottomNavigationBarItem(
-        icon: Image.asset(_tabList[index]['icon']!, width: 30, height: 30),
-        activeIcon: Image.asset(
-          _tabList[index]['active_icon']!,
-          width: 30,
-          height: 30,
-        ),
-        label: _tabList[index]['text']!,
+        icon: Image.asset(_tabIcons[index].$1, width: 30, height: 30),
+        activeIcon: Image.asset(_tabIcons[index].$2, width: 30, height: 30),
+        label: labels[index],
       );
     });
   }
 
   List<Widget> _getChildren() {
-    return [HomeView(), CategoryView(), AiView(), MineView()];
+    return const [HomeView(), CategoryView(), AiView(), MineView()];
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: _currentIndex != 3
           ? AppBar(
@@ -67,29 +50,21 @@ class _MainPageState extends State<MainPage> {
               actions: [
                 Padding(
                   padding: const EdgeInsets.only(right: 16),
-                  child: Icon(
-                    Icons.notifications_none,
-                    color: Colors.black,
-                    size: 28,
-                  ),
+                  child: Icon(Icons.notifications_none, color: Colors.black, size: 28),
                 ),
               ],
             )
           : null,
       body: SafeArea(
-        child: IndexedStack(children: _getChildren(), index: _currentIndex),
+        child: IndexedStack(index: _currentIndex, children: _getChildren()),
       ),
       bottomNavigationBar: BottomNavigationBar(
         showUnselectedLabels: true,
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.black,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
         currentIndex: _currentIndex,
-        items: _getTabBarWidget(),
+        items: _getTabBarWidget(l10n),
       ),
     );
   }

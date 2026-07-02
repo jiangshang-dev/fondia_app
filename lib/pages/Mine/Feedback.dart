@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/api/user.dart';
+import 'package:fondia/l10n/app_localizations.dart';
 import 'package:fondia/stores/TokenManager.dart';
 import 'package:fondia/utils/recipe_image.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,7 +13,8 @@ class FeedbackView extends StatefulWidget {
 }
 
 class _FeedbackViewState extends State<FeedbackView> {
-  final List<String> _feedbackTypes = ['功能建议', '性能问题', '内容报错', '积分/签到', '其他问题'];
+  /// 提交接口仍使用简体中文类型值，界面展示走国际化
+  static const _feedbackTypeApiValues = ['功能建议', '性能问题', '内容报错', '积分/签到', '其他问题'];
   int _selectedTypeIndex = 0;
 
   final TextEditingController _contentController = TextEditingController();
@@ -32,14 +34,15 @@ class _FeedbackViewState extends State<FeedbackView> {
   Future<bool> _ensureLogin() async {
     if (tokenManager.isLoggedIn()) return true;
     if (!mounted) return false;
+    final l10n = context.l10n;
     final goLogin = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('提示'),
-        content: const Text('提交反馈需要先登录'),
+        title: Text(l10n.tip),
+        content: Text(l10n.needLoginFeedback),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('去登录')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.goLogin)),
         ],
       ),
     );
@@ -52,7 +55,9 @@ class _FeedbackViewState extends State<FeedbackView> {
   Future<void> _pickAndUploadImage() async {
     if (_imageUrls.length >= 3 || _uploadingImage) return;
     if (!await _ensureLogin()) return;
+    if (!mounted) return;
 
+    final l10n = context.l10n;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -64,12 +69,12 @@ class _FeedbackViewState extends State<FeedbackView> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library_outlined, color: Color(0xFFFF6A1A)),
-              title: const Text('从相册选择'),
+              title: Text(l10n.pickFromGallery),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined, color: Color(0xFFFF6A1A)),
-              title: const Text('拍照上传'),
+              title: Text(l10n.takePhoto),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
           ],
@@ -111,9 +116,10 @@ class _FeedbackViewState extends State<FeedbackView> {
   Future<void> _submit() async {
     if (_submitting) return;
     final content = _contentController.text.trim();
+    final l10n = context.l10n;
     if (content.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请填写反馈内容')),
+        SnackBar(content: Text(l10n.fillFeedbackContent)),
       );
       return;
     }
@@ -122,15 +128,15 @@ class _FeedbackViewState extends State<FeedbackView> {
     setState(() => _submitting = true);
     try {
       await UserApi.submitFeedback(
-        feedbackType: _feedbackTypes[_selectedTypeIndex],
+        feedbackType: _feedbackTypeApiValues[_selectedTypeIndex],
         content: content,
         contact: _contactController.text.trim(),
         images: _imageUrls,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('感谢您的反馈，我们会尽快处理！'),
+        SnackBar(
+          content: Text(l10n.thankYouFeedback),
           backgroundColor: Color(0xFFFF6A1A),
         ),
       );
@@ -147,6 +153,7 @@ class _FeedbackViewState extends State<FeedbackView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FA),
       appBar: AppBar(
@@ -156,9 +163,9 @@ class _FeedbackViewState extends State<FeedbackView> {
           icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: Color(0xFF333333)),
           onPressed: () => Navigator.maybePop(context),
         ),
-        title: const Text(
-          '意见反馈',
-          style: TextStyle(color: Color(0xFF333333), fontSize: 18, fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.feedbackTitle,
+          style: const TextStyle(color: Color(0xFF333333), fontSize: 18, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -169,17 +176,17 @@ class _FeedbackViewState extends State<FeedbackView> {
             ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               children: [
-                _buildSectionTitle('反馈类型'),
-                _buildTypeSelector(),
+                _buildSectionTitle(l10n.feedbackType),
+                _buildTypeSelector(l10n),
                 const SizedBox(height: 20),
-                _buildSectionTitle('反馈内容'),
-                _buildContentCard(),
+                _buildSectionTitle(l10n.feedbackContent),
+                _buildContentCard(l10n),
                 const SizedBox(height: 20),
-                _buildSectionTitle('联系方式（选填）'),
-                _buildContactCard(),
+                _buildSectionTitle(l10n.contactOptional),
+                _buildContactCard(l10n),
               ],
             ),
-            _buildBottomSubmitButton(),
+            _buildBottomSubmitButton(l10n),
           ],
         ),
       ),
@@ -196,11 +203,12 @@ class _FeedbackViewState extends State<FeedbackView> {
     );
   }
 
-  Widget _buildTypeSelector() {
+  Widget _buildTypeSelector(AppLocalizations l10n) {
+    final types = l10n.feedbackTypes;
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: List.generate(_feedbackTypes.length, (index) {
+      children: List.generate(types.length, (index) {
         final isSelected = _selectedTypeIndex == index;
         return InkWell(
           onTap: () => setState(() => _selectedTypeIndex = index),
@@ -216,7 +224,7 @@ class _FeedbackViewState extends State<FeedbackView> {
               ),
             ),
             child: Text(
-              _feedbackTypes[index],
+              types[index],
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -229,7 +237,7 @@ class _FeedbackViewState extends State<FeedbackView> {
     );
   }
 
-  Widget _buildContentCard() {
+  Widget _buildContentCard(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -244,11 +252,11 @@ class _FeedbackViewState extends State<FeedbackView> {
             maxLines: 5,
             maxLength: 300,
             style: const TextStyle(fontSize: 14, color: Color(0xFF333333)),
-            decoration: const InputDecoration(
-              hintText: '请详细描述您遇到的问题或提出的建议，小厨会认真阅读并不断优化体验～',
-              hintStyle: TextStyle(color: Color(0xFFBBBBBB), fontSize: 13, height: 1.4),
+            decoration: InputDecoration(
+              hintText: l10n.feedbackHint,
+              hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 13, height: 1.4),
               border: InputBorder.none,
-              counterStyle: TextStyle(color: Color(0xFFBBBBBB), fontSize: 11),
+              counterStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 11),
             ),
           ),
           const SizedBox(height: 12),
@@ -259,7 +267,7 @@ class _FeedbackViewState extends State<FeedbackView> {
             runSpacing: 12,
             children: [
               ...List.generate(_imageUrls.length, (index) => _buildImageItem(_imageUrls[index], index)),
-              if (_imageUrls.length < 3 && !_uploadingImage) _buildUploadTrigger(),
+              if (_imageUrls.length < 3 && !_uploadingImage) _buildUploadTrigger(l10n),
               if (_uploadingImage)
                 Container(
                   width: 72,
@@ -278,9 +286,9 @@ class _FeedbackViewState extends State<FeedbackView> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            '最多可上传 3 张截图或图片（选填）',
-            style: TextStyle(fontSize: 11, color: Color(0xFF999999)),
+          Text(
+            l10n.uploadImagesHint,
+            style: const TextStyle(fontSize: 11, color: Color(0xFF999999)),
           ),
         ],
       ),
@@ -316,7 +324,7 @@ class _FeedbackViewState extends State<FeedbackView> {
     );
   }
 
-  Widget _buildUploadTrigger() {
+  Widget _buildUploadTrigger(AppLocalizations l10n) {
     return InkWell(
       onTap: _pickAndUploadImage,
       borderRadius: BorderRadius.circular(8),
@@ -328,19 +336,19 @@ class _FeedbackViewState extends State<FeedbackView> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: const Color(0xFFE5E5E5)),
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_photo_alternate_outlined, size: 24, color: Color(0xFF999999)),
-            SizedBox(height: 4),
-            Text('传图片', style: TextStyle(fontSize: 11, color: Color(0xFF999999))),
+            const Icon(Icons.add_photo_alternate_outlined, size: 24, color: Color(0xFF999999)),
+            const SizedBox(height: 4),
+            Text(l10n.uploadImage, style: const TextStyle(fontSize: 11, color: Color(0xFF999999))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildContactCard() {
+  Widget _buildContactCard(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
@@ -350,16 +358,16 @@ class _FeedbackViewState extends State<FeedbackView> {
       child: TextField(
         controller: _contactController,
         style: const TextStyle(fontSize: 14, color: Color(0xFF333333)),
-        decoration: const InputDecoration(
-          hintText: '手机号 / 邮箱 / QQ（方便我们与您联系）',
-          hintStyle: TextStyle(color: Color(0xFFBBBBBB), fontSize: 13),
+        decoration: InputDecoration(
+          hintText: l10n.contactHint,
+          hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 13),
           border: InputBorder.none,
         ),
       ),
     );
   }
 
-  Widget _buildBottomSubmitButton() {
+  Widget _buildBottomSubmitButton(AppLocalizations l10n) {
     return Positioned(
       left: 0,
       right: 0,
@@ -386,9 +394,9 @@ class _FeedbackViewState extends State<FeedbackView> {
                       height: 22,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text(
-                      '提交反馈',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  : Text(
+                      l10n.submitFeedback,
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
             ),
           ),

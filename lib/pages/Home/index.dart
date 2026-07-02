@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fondia/api/cuisine.dart';
 import 'package:fondia/components/Home/Slider.dart';
 import 'package:fondia/components/common/SectionTitleBar.dart';
+import 'package:fondia/l10n/app_localizations.dart';
 import 'package:fondia/models/recipe_models.dart';
 import 'package:fondia/pages/CategoryDetail/DishDetail.dart';
 import 'package:fondia/pages/CategoryDetail/index.dart';
@@ -72,6 +73,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return RefreshIndicator(
       onRefresh: _loadData,
       child: SingleChildScrollView(
@@ -92,9 +94,9 @@ class _HomeViewState extends State<HomeView> {
                 children: [
                   Image.asset('lib/assets/hot.png', width: 32, height: 32),
                   const SizedBox(width: 8),
-                  const Text(
-                    '热门菜系',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  Text(
+                    l10n.hotCuisines,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -106,9 +108,9 @@ class _HomeViewState extends State<HomeView> {
                 child: CircularProgressIndicator(color: Colors.orange),
               )
             else if (_hotCuisines.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('暂无热门菜系', style: TextStyle(color: Colors.grey)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(l10n.noHotCuisines, style: const TextStyle(color: Colors.grey)),
               )
             else
               SizedBox(
@@ -153,7 +155,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
               ),
             const SizedBox(height: 24),
-            SectionTitleBar(title: '菜系分类', padding: EdgeInsets.zero),
+            SectionTitleBar(title: l10n.cuisineCategory, padding: EdgeInsets.zero),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -205,8 +207,8 @@ class _HomeViewState extends State<HomeView> {
             ),
             const SizedBox(height: 24),
             SectionTitleBar(
-              title: '今日推荐',
-              actionText: '换一换',
+              title: l10n.todayRecommend,
+              actionText: l10n.refresh,
               padding: EdgeInsets.zero,
               onActionTap: _loadData,
             ),

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fondia/api/support.dart';
 import 'package:fondia/constants/index.dart';
+import 'package:fondia/l10n/app_localizations.dart';
 import 'package:fondia/stores/TokenManager.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -31,7 +32,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
   List<Map<String, dynamic>> _chatMessages = [];
   String? _sessionId;
   String _sessionStatus = 'AI';
-  String _privacyTip = '小厨致力保护您的隐私，本次通话已加密。';
+  String _privacyTip = '';
   String _humanGreeting = '';
   bool _loading = true;
   bool _sending = false;
@@ -49,7 +50,8 @@ class _HumanServiceViewState extends State<HumanServiceView> {
   Future<void> _bootstrap() async {
     try {
       final config = await SupportApi.getConfig();
-      _privacyTip = config['privacyTip']?.toString() ?? _privacyTip;
+      final l10n = mounted ? context.l10n : null;
+      _privacyTip = config['privacyTip']?.toString() ?? l10n?.privacyTipDefault ?? '';
       _humanGreeting = config['humanGreeting']?.toString() ?? '';
 
       if (widget.transferToHuman) {
@@ -67,7 +69,8 @@ class _HumanServiceViewState extends State<HumanServiceView> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('加载失败: $e')));
+        final l10n = context.l10n;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.loadFailed}: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -195,7 +198,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
       await _loadHistory();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('发送失败: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${context.l10n.sendFailed}: $e')));
       }
     }
   }
@@ -235,7 +238,8 @@ class _HumanServiceViewState extends State<HumanServiceView> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _isHumanMode ? '人工客服' : '在线客服';
+    final l10n = context.l10n;
+    final title = _isHumanMode ? l10n.humanService : l10n.onlineService;
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FA),
       appBar: AppBar(
@@ -249,16 +253,16 @@ class _HumanServiceViewState extends State<HumanServiceView> {
           children: [
             Text(title, style: const TextStyle(color: Color(0xFF333333), fontSize: 16, fontWeight: FontWeight.bold)),
             if (_isHumanMode)
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SizedBox(width: 6, height: 6, child: DecoratedBox(decoration: BoxDecoration(color: Color(0xFF00BFA5), shape: BoxShape.circle))),
                   SizedBox(width: 4),
-                  Text('客服在线中', style: TextStyle(color: Color(0xFF999999), fontSize: 11)),
+                  Text(l10n.customerOnline, style: TextStyle(color: Color(0xFF999999), fontSize: 11)),
                 ],
               )
             else
-              const Text('智能自助', style: TextStyle(color: Color(0xFF999999), fontSize: 11)),
+              Text(l10n.aiSelfService, style: const TextStyle(color: Color(0xFF999999), fontSize: 11)),
           ],
         ),
         centerTitle: true,
@@ -266,7 +270,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
           if (!_isHumanMode)
             TextButton(
               onPressed: _doTransfer,
-              child: const Text('转人工', style: TextStyle(color: Color(0xFFFF6A1A), fontSize: 13)),
+              child: Text(l10n.transferToHuman, style: const TextStyle(color: Color(0xFFFF6A1A), fontSize: 13)),
             ),
         ],
       ),
@@ -284,7 +288,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
                       itemBuilder: (context, index) => _buildChatBubble(_chatMessages[index]),
                     ),
                   ),
-                  _buildBottomChatInput(),
+                  _buildBottomChatInput(l10n),
                 ],
               ),
             ),
@@ -364,7 +368,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
     );
   }
 
-  Widget _buildBottomChatInput() {
+  Widget _buildBottomChatInput(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       decoration: const BoxDecoration(
@@ -385,7 +389,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _sendMessage(),
                 decoration: InputDecoration(
-                  hintText: _isHumanMode ? '描述您遇到的问题...' : '请输入您的问题，AI将基于知识库为您解答...',
+                  hintText: _isHumanMode ? l10n.describeProblem : l10n.askAiQuestion,
                   hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 13),
                   border: InputBorder.none,
                   isDense: true,

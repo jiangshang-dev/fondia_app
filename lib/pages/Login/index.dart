@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/components/common/ProtocolAgreementRow.dart';
+import 'package:fondia/l10n/app_localizations.dart';
 import 'package:fondia/pages/Login/EmailLogin.dart';
 import 'package:fondia/pages/Login/PasswordLogin.dart';
 import 'package:fondia/pages/Main/index.dart';
@@ -17,6 +18,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       // 使用带微弱渐变底色的背景
       body: Container(
@@ -38,15 +40,15 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             children: [
               // 1. 顶部工具栏（帮助中心）
-              _buildTopBar(),
+              _buildTopBar(l10n),
 
               // 2. 欢迎语与美食插图区域
-              _buildHeaderSection(),
+              _buildHeaderSection(l10n),
 
               const SizedBox(height: 20),
 
               // 3. 下半部分白色登录卡片
-              Expanded(child: _buildLoginCard()),
+              Expanded(child: _buildLoginCard(l10n)),
             ],
           ),
         ),
@@ -54,24 +56,22 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // 顶部“帮助中心”
-  Widget _buildTopBar() {
+  Widget _buildTopBar(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       alignment: Alignment.centerRight,
       height: 44,
       child: TextButton(
         onPressed: () {},
-        child: const Text(
-          '帮助中心',
-          style: TextStyle(color: Colors.black54, fontSize: 14),
+        child: Text(
+          l10n.helpCenter,
+          style: const TextStyle(color: Colors.black54, fontSize: 14),
         ),
       ),
     );
   }
 
-  // 欢迎语与插图
-  Widget _buildHeaderSection() {
+  Widget _buildHeaderSection(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Row(
@@ -80,9 +80,9 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '欢迎来到',
-                  style: TextStyle(
+                Text(
+                  l10n.welcomeTo,
+                  style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Color(0xff2d2d2d),
@@ -90,18 +90,18 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  '菜谱',
-                  style: TextStyle(
+                Text(
+                  l10n.recipes,
+                  style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xffff7f32), // 标志性橙色
+                    color: Color(0xffff7f32),
                     letterSpacing: 2,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '让做饭更简单，爱生活，爱美食',
+                  l10n.loginSlogan,
                   style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
                 // 模拟文字下方的波浪线
@@ -130,8 +130,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // 白色主体登录卡片
-  Widget _buildLoginCard() {
+  Widget _buildLoginCard(AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -146,15 +145,13 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           children: [
             const SizedBox(height: 12),
-            // 快捷登录标题
-            _buildSectionDivider('快捷登录'),
+            _buildSectionDivider(l10n.quickLogin),
             const SizedBox(height: 24),
 
-            // 登录按钮列表
             _buildThirdPartyButton(
-              icon: Icons.g_mobiledata, // 建议换成真正的谷歌图标资产
+              icon: Icons.g_mobiledata,
               iconColor: Colors.green,
-              text: '使用 Google 账号登录',
+              text: l10n.loginWithGoogle,
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -168,7 +165,7 @@ class _LoginPageState extends State<LoginPage> {
               icon: Icons.apple,
               // iconColor: const Color(0xff07c160),
               iconColor: Colors.black,
-              text: '使用Apple账号登录',
+              text: l10n.loginWithApple,
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -181,7 +178,7 @@ class _LoginPageState extends State<LoginPage> {
             _buildThirdPartyButton(
               icon: Icons.payment, // 支付宝可以使用自定义资产图，这里用类似图标代替
               iconColor: const Color(0xff1677ff),
-              text: '使用支付宝登录',
+              text: l10n.loginWithAlipay,
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -194,7 +191,7 @@ class _LoginPageState extends State<LoginPage> {
             _buildThirdPartyButton(
               icon: Icons.phone_android,
               iconColor: const Color(0xffff7f32),
-              text: '使用手机号登录',
+              text: l10n.loginWithPhone,
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -205,15 +202,13 @@ class _LoginPageState extends State<LoginPage> {
             ),
 
             const SizedBox(height: 40),
-            // 其他方式登录标题
-            _buildSectionDivider('其他方式登录', isSub: true),
+            _buildSectionDivider(l10n.otherLogin, isSub: true),
             const SizedBox(height: 20),
 
-            // 邮箱与密码登录小图标
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildSubLoginItem(Icons.mail_outline, '邮箱登录', () {
+                _buildSubLoginItem(Icons.mail_outline, l10n.emailLogin, () {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (context) => const EmailLoginView()),
@@ -221,7 +216,7 @@ class _LoginPageState extends State<LoginPage> {
                   );
                 }),
                 const SizedBox(width: 60),
-                _buildSubLoginItem(Icons.lock_open_outlined, '密码登录', () {
+                _buildSubLoginItem(Icons.lock_open_outlined, l10n.passwordLogin, () {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (context) => const PasswordLoginView()),

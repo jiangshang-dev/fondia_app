@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/api/interaction.dart';
 import 'package:fondia/api/user.dart';
+import 'package:fondia/l10n/app_localizations.dart';
 import 'package:fondia/models/user_profile.dart';
 import 'package:fondia/pages/Mine/BrowsingHistory.dart';
 import 'package:fondia/pages/Mine/Collection.dart';
@@ -102,6 +103,7 @@ class _MineViewState extends State<MineView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
       // 使用 SafeArea 避免遮挡顶部状态栏
@@ -114,7 +116,7 @@ class _MineViewState extends State<MineView> {
               children: [
                 _buildHeader(),
                 _buildPointsCard(),
-                _buildSection("我的内容", _buildMyContentGrid()),
+                _buildSection(l10n.myContent, _buildMyContentGrid(l10n)),
                 // _buildSettingsList(), 设置
                 const SizedBox(height: 20),
               ],
@@ -127,6 +129,7 @@ class _MineViewState extends State<MineView> {
 
   // 1. 顶部用户信息
   Widget _buildHeader() {
+    final l10n = context.l10n;
     final isLoggedIn = tokenManager.isLoggedIn();
     final profile = _profile;
     final avatarUrl = profile?.avatarUrl;
@@ -224,12 +227,12 @@ class _MineViewState extends State<MineView> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '连续签到 ${profile?.checkInDays ?? 0} 天',
+                                l10n.consecutiveCheckIn(profile?.checkInDays ?? 0),
                                 style: const TextStyle(fontSize: 12),
                               ),
                               const Spacer(),
                               Text(
-                                '成长值 ${profile?.growthValue ?? 0}/1000',
+                                l10n.growthValue(profile?.growthValue ?? 0, 1000),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey,
@@ -270,16 +273,16 @@ class _MineViewState extends State<MineView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              '点击登录',
-                              style: TextStyle(
+                            Text(
+                              l10n.clickToLogin,
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              '登录后享受更多功能',
+                            Text(
+                              l10n.loginForMore,
                               style: TextStyle(
                                 color: Colors.grey,
                                 fontSize: 12,
@@ -303,6 +306,7 @@ class _MineViewState extends State<MineView> {
 
   // 2. 积分卡片 (橙色渐变)
   Widget _buildPointsCard() {
+    final l10n = context.l10n;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -318,12 +322,12 @@ class _MineViewState extends State<MineView> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "我的积分",
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+              Text(
+                l10n.myPoints,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
               Text(
-                "${_profile?.points ?? 0} 积分",
+                l10n.pointsCount(_profile?.points ?? 0),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -340,16 +344,16 @@ class _MineViewState extends State<MineView> {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  "积分明细 >",
-                  style: TextStyle(color: Colors.white, fontSize: 12),
+                child: Text(
+                  l10n.pointsDetail,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
             ],
           ),
-          _buildPointsIcon(Icons.assignment_turned_in, "去赚积分"),
-          _buildPointsIcon(Icons.calendar_month, "每日签到"),
-          _buildPointsIcon(Icons.shopping_bag, "积分商城"),
+          _buildPointsIcon(Icons.assignment_turned_in, l10n.earnPoints),
+          _buildPointsIcon(Icons.calendar_month, l10n.dailyCheckIn),
+          _buildPointsIcon(Icons.shopping_bag, l10n.pointsMall),
         ],
       ),
     );
@@ -403,7 +407,7 @@ class _MineViewState extends State<MineView> {
   }
 
   // 4. 我的内容网格 (包含跳转逻辑)
-  Widget _buildMyContentGrid() {
+  Widget _buildMyContentGrid(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -418,7 +422,7 @@ class _MineViewState extends State<MineView> {
         children: [
           _buildGridItem(
             Icons.vaccines,
-            "会员中心",
+            l10n.vipCenter,
             "56",
             color: Colors.red,
             onTap: () {
@@ -431,14 +435,14 @@ class _MineViewState extends State<MineView> {
           // 跳转到收藏页面
           _buildGridItem(
             Icons.favorite,
-            "我的收藏",
+            l10n.myCollection,
             tokenManager.isLoggedIn() ? '$_collectCount' : '-',
             color: Colors.red,
             onTap: () => _openPage(const CollectionView()),
           ),
           _buildGridItem(
             Icons.thumb_up,
-            "我的点赞",
+            l10n.myLikes,
             tokenManager.isLoggedIn() ? '$_likeCount' : '-',
             color: Colors.orange,
             onTap: () => _openPage(const LikedView()),
@@ -457,14 +461,14 @@ class _MineViewState extends State<MineView> {
           // ),
           _buildGridItem(
             Icons.history,
-            "浏览记录",
+            l10n.browseHistory,
             tokenManager.isLoggedIn() ? '$_browseCount' : '-',
             color: Colors.indigo,
             onTap: () => _openPage(const BrowsingHistoryView()),
           ),
           _buildGridItem(
             Icons.chat,
-            "在线客服",
+            l10n.onlineService,
             "18",
             color: Colors.amber,
             onTap: () {
@@ -478,7 +482,7 @@ class _MineViewState extends State<MineView> {
           ),
           _buildGridItem(
             Icons.feedback,
-            "意见反馈",
+            l10n.feedback,
             "19",
             color: Colors.amber,
             onTap: () {
@@ -518,6 +522,7 @@ class _MineViewState extends State<MineView> {
 
   // 7. 设置列表
   Widget _buildSettingsList() {
+    final l10n = context.l10n;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
@@ -528,7 +533,7 @@ class _MineViewState extends State<MineView> {
         children: [
           ListTile(
             leading: const Icon(Icons.settings),
-            title: const Text("设置"),
+            title: Text(l10n.settings),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.push(
@@ -540,7 +545,7 @@ class _MineViewState extends State<MineView> {
           const Divider(height: 1),
           ListTile(
             leading: const Icon(Icons.notifications_none),
-            title: const Text("通知设置"),
+            title: Text(l10n.notificationSettings),
             trailing: const Icon(Icons.chevron_right),
           ),
         ],
