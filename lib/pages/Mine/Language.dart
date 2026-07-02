@@ -12,7 +12,7 @@ class _LanguageState extends State<Language> {
   String _selectedLanguage = '简体中文';
 
   // 语言列表数据
-  final List<String> _languageList = ['简体字（中国大陆地区）', '正体字（中国）', 'English', '日本語', '한국어'];
+  final List<String> _languageList = ['简体字（中国大陆地区）', '正体字（中国）', 'English'];
 
   @override
   Widget build(BuildContext context) {

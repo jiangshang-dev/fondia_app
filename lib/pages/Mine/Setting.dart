@@ -53,18 +53,18 @@ class _SettingState extends State<Setting> {
         children: [
           SettingsSectionTitle(title: '账号与安全'),
           SettingsGroupCard(children: [
-            SettingsListTile(
-              icon: Icons.phone_android_outlined,
-              title: '手机号绑定',
-              trailingText: '138****5678',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PhoneView())),
-            ),
-            SettingsListTile(
-              icon: Icons.link_outlined,
-              title: '账号绑定',
-              trailingWidget: _socialIcons(),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const Account())),
-            ),
+            // SettingsListTile(
+            //   icon: Icons.phone_android_outlined,
+            //   title: '手机号绑定',
+            //   trailingText: '138****5678',
+            //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PhoneView())),
+            // ),
+            // SettingsListTile(
+            //   icon: Icons.link_outlined,
+            //   title: '账号绑定',
+            //   trailingWidget: _socialIcons(),
+            //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const Account())),
+            // ),
             const SettingsListTile(icon: Icons.lock_open_outlined, title: '修改密码'),
             // const SettingsListTile(
             //   icon: Icons.important_devices_outlined,
