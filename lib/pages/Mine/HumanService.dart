@@ -1,7 +1,23 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:fondia/api/support.dart';
+import 'package:fondia/constants/index.dart';
+import 'package:fondia/stores/TokenManager.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+/// 统一客服聊天页：默认 AI 自助，可转人工（WebSocket）
 class HumanServiceView extends StatefulWidget {
-  const HumanServiceView({super.key});
+  const HumanServiceView({
+    super.key,
+    this.presetMessage,
+    this.transferToHuman = false,
+    this.source,
+  });
+
+  final String? presetMessage;
+  final bool transferToHuman;
+  final String? source;
 
   @override
   State<HumanServiceView> createState() => _HumanServiceViewState();
@@ -11,57 +27,219 @@ class _HumanServiceViewState extends State<HumanServiceView> {
   final TextEditingController _msgController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // 模拟真实的人工对话流数据
-  final List<Map<String, dynamic>> _chatMessages = [
-    {
-      'isMe': false,
-      'time': '14:35',
-      'text': '您好，我是人工客服小美，很高兴为您服务！请问有什么可以帮您的？🌸',
-    },
-    {
-      'isMe': true,
-      'time': '14:36',
-      'text': '你好，我今天早上签到失败了，连续签到3天的奖励没有拿到，能帮我查查吗？',
-    },
-    {
-      'isMe': false,
-      'time': '14:37',
-      'text': '好的，收到您的反馈。这边正在为您查询系统后台日志，请稍等 1-2 分钟哦～',
-    },
-  ];
+  List<Map<String, dynamic>> _chatMessages = [];
+  String? _sessionId;
+  String _sessionStatus = 'AI';
+  String _privacyTip = '小厨致力保护您的隐私，本次通话已加密。';
+  String _humanGreeting = '';
+  bool _loading = true;
+  bool _sending = false;
+  WebSocketChannel? _wsChannel;
+
+  bool get _isHumanMode => _sessionStatus == 'WAITING' || _sessionStatus == 'CHATTING';
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    try {
+      final config = await SupportApi.getConfig();
+      _privacyTip = config['privacyTip']?.toString() ?? _privacyTip;
+      _humanGreeting = config['humanGreeting']?.toString() ?? '';
+
+      if (widget.transferToHuman) {
+        await _doTransfer();
+      } else {
+        final active = await SupportApi.getActiveSession();
+        if (active != null && (active['status'] == 'WAITING' || active['status'] == 'CHATTING')) {
+          _sessionId = active['id']?.toString();
+          _sessionStatus = active['status']?.toString() ?? 'WAITING';
+          await _loadHistory();
+          _connectWs();
+        } else if (widget.presetMessage != null && widget.presetMessage!.isNotEmpty) {
+          await _sendAiMessage(widget.presetMessage!);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('加载失败: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadHistory() async {
+    if (_sessionId == null) return;
+    final list = await SupportApi.getMessages(_sessionId!);
+    setState(() {
+      _chatMessages = list.map((e) => _mapMessage(Map<String, dynamic>.from(e))).toList();
+    });
+    _scrollToBottom();
+  }
+
+  Map<String, dynamic> _mapMessage(Map<String, dynamic> msg) {
+    final sender = msg['senderType']?.toString() ?? '';
+    return {
+      'isMe': sender == 'USER',
+      'isAi': sender == 'AI',
+      'time': _formatTime(msg['createTime']),
+      'text': msg['content']?.toString() ?? '',
+    };
+  }
+
+  String _formatTime(dynamic ts) {
+    if (ts == null) return '';
+    final dt = DateTime.fromMillisecondsSinceEpoch(int.parse(ts.toString()));
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _connectWs() {
+    if (_sessionId == null) return;
+    final wsBase = GlobalConstants.BASE_URL.replaceFirst('http', 'ws');
+    final token = tokenManager.getToken();
+    final uri = Uri.parse('$wsBase/ws/cs/app/$_sessionId?token=$token');
+    _wsChannel?.sink.close();
+    _wsChannel = WebSocketChannel.connect(uri);
+    _wsChannel!.stream.listen((event) {
+      try {
+        final json = jsonDecode(event.toString());
+        if (json['cmd'] == 'CHAT_PUSH') {
+          final data = json['data'];
+          if (data != null) {
+            setState(() {
+              _chatMessages.add({
+                'isMe': false,
+                'isAi': data['senderType'] == 'AI',
+                'time': _formatTime(data['createTime']),
+                'text': data['content']?.toString() ?? '',
+              });
+            });
+            _scrollToBottom();
+          }
+        }
+      } catch (_) {}
+    });
+  }
+
+  Future<void> _doTransfer() async {
+    final res = await SupportApi.transferToHuman(source: widget.source);
+    _sessionId = res['id']?.toString();
+    _sessionStatus = res['status']?.toString() ?? 'WAITING';
+    final greeting = res['humanGreeting']?.toString() ?? _humanGreeting;
+    setState(() {
+      _chatMessages.add({
+        'isMe': false,
+        'isAi': false,
+        'time': _formatTime(DateTime.now().millisecondsSinceEpoch),
+        'text': greeting,
+      });
+    });
+    _connectWs();
+    _scrollToBottom();
+  }
+
+  Future<void> _sendAiMessage(String text) async {
+    setState(() => _sending = true);
+    try {
+      setState(() {
+        _chatMessages.add({
+          'isMe': true,
+          'isAi': false,
+          'time': _formatTime(DateTime.now().millisecondsSinceEpoch),
+          'text': text,
+        });
+      });
+      final res = await SupportApi.aiChat(content: text, sessionId: _sessionId, source: widget.source);
+      _sessionId = res['sessionId']?.toString() ?? _sessionId;
+
+      if (res['transferred'] == true) {
+        _sessionStatus = 'WAITING';
+        final greeting = res['humanGreeting']?.toString() ?? _humanGreeting;
+        setState(() {
+          _chatMessages.add({
+            'isMe': false,
+            'isAi': false,
+            'time': _formatTime(DateTime.now().millisecondsSinceEpoch),
+            'text': greeting,
+          });
+        });
+        _connectWs();
+      } else {
+        setState(() {
+          _chatMessages.add({
+            'isMe': false,
+            'isAi': true,
+            'time': _formatTime(DateTime.now().millisecondsSinceEpoch),
+            'text': res['reply']?.toString() ?? '',
+          });
+        });
+      }
+      _scrollToBottom();
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _sendHumanMessage(String text) async {
+    if (_wsChannel == null) return;
+    _wsChannel!.sink.add(jsonEncode({
+      'cmd': 'CHAT_SEND',
+      'sessionId': _sessionId,
+      'data': {'content': text, 'clientMsgId': DateTime.now().millisecondsSinceEpoch.toString()},
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    }));
+    setState(() {
+      _chatMessages.add({
+        'isMe': true,
+        'isAi': false,
+        'time': _formatTime(DateTime.now().millisecondsSinceEpoch),
+        'text': text,
+      });
+    });
+    _scrollToBottom();
+  }
+
+  void _sendMessage() async {
+    final text = _msgController.text.trim();
+    if (text.isEmpty || _sending) return;
+    _msgController.clear();
+
+    if (_isHumanMode) {
+      await _sendHumanMessage(text);
+    } else {
+      await _sendAiMessage(text);
+    }
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _wsChannel?.sink.close();
     _msgController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  // 模拟发送消息
-  void _sendMessage() {
-    if (_msgController.text.trim().isEmpty) return;
-    setState(() {
-      _chatMessages.add({
-        'isMe': true,
-        'time': '14:38', // 实际开发用 DateTime 格式化
-        'text': _msgController.text.trim(),
-      });
-    });
-    _msgController.clear();
-    // 延迟滚动到底部
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final title = _isHumanMode ? '人工客服' : '在线客服';
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FA), // 保持系统浅灰底色
+      backgroundColor: const Color(0xFFF7F9FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -71,77 +249,68 @@ class _HumanServiceViewState extends State<HumanServiceView> {
         ),
         title: Column(
           children: [
-            const Text(
-              '人工客服',
-              style: TextStyle(color: Color(0xFF333333), fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 2),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(color: Color(0xFF00BFA5), shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 4),
-                const Text('小美在线中', style: TextStyle(color: Color(0xFF999999), fontSize: 11)),
-              ],
-            )
+            Text(title, style: const TextStyle(color: Color(0xFF333333), fontSize: 16, fontWeight: FontWeight.bold)),
+            if (_isHumanMode)
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(width: 6, height: 6, child: DecoratedBox(decoration: BoxDecoration(color: Color(0xFF00BFA5), shape: BoxShape.circle))),
+                  SizedBox(width: 4),
+                  Text('客服在线中', style: TextStyle(color: Color(0xFF999999), fontSize: 11)),
+                ],
+              )
+            else
+              const Text('智能自助', style: TextStyle(color: Color(0xFF999999), fontSize: 11)),
           ],
         ),
         centerTitle: true,
+        actions: [
+          if (!_isHumanMode)
+            TextButton(
+              onPressed: _doTransfer,
+              child: const Text('转人工', style: TextStyle(color: Color(0xFFFF6A1A), fontSize: 13)),
+            ),
+        ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 提示横幅：强调人工服务与隐私
-            _buildTopTipBanner(),
-
-            // 1. 聊天消息主体对话流
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                itemCount: _chatMessages.length,
-                itemBuilder: (context, index) {
-                  return _buildChatBubble(_chatMessages[index]);
-                },
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFFF6A1A)))
+          : SafeArea(
+              child: Column(
+                children: [
+                  _buildTopTipBanner(),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      itemCount: _chatMessages.length,
+                      itemBuilder: (context, index) => _buildChatBubble(_chatMessages[index]),
+                    ),
+                  ),
+                  _buildBottomChatInput(),
+                ],
               ),
             ),
-
-            // 2. 底部复合聊天输入栏（与 AI 助手完美对齐）
-            _buildBottomChatInput(),
-          ],
-        ),
-      ),
     );
   }
 
-  // 顶部提示条
   Widget _buildTopTipBanner() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      color: const Color(0xFFFFF7F2), // 经典温暖淡蜜桃粉
-      child: const Row(
+      color: const Color(0xFFFFF7F2),
+      child: Row(
         children: [
-          Icon(Icons.security, size: 14, color: Color(0xFFFF8A4C)),
-          SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              '小厨致力保护您的隐私，本次通话已加密。',
-              style: TextStyle(fontSize: 11, color: Color(0xFFFF8A4C)),
-            ),
-          ),
+          const Icon(Icons.security, size: 14, color: Color(0xFFFF8A4C)),
+          const SizedBox(width: 6),
+          Expanded(child: Text(_privacyTip, style: const TextStyle(fontSize: 11, color: Color(0xFFFF8A4C)))),
         ],
       ),
     );
   }
 
-  // 1. 聊天气泡构建器
   Widget _buildChatBubble(Map<String, dynamic> msg) {
-    final bool isMe = msg['isMe'];
+    final bool isMe = msg['isMe'] == true;
+    final avatar = isMe ? '🍳' : (msg['isAi'] == true ? '🤖' : '👩‍💻');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -149,18 +318,15 @@ class _HumanServiceViewState extends State<HumanServiceView> {
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 左侧客服头像
           if (!isMe) ...[
             Container(
               width: 36,
               height: 36,
               decoration: const BoxDecoration(color: Color(0xFFFFE6D5), shape: BoxShape.circle),
-              child: const Center(child: Text('👩‍💻', style: TextStyle(fontSize: 18))),
+              child: Center(child: Text(avatar, style: const TextStyle(fontSize: 18))),
             ),
             const SizedBox(width: 8),
           ],
-
-          // 聊天气泡本体
           Flexible(
             child: Column(
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -168,25 +334,17 @@ class _HumanServiceViewState extends State<HumanServiceView> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: isMe ? const Color(0xFFFFE6D5) : Colors.white, // 我发的用暖粉橙色，客服用白色卡片
+                    color: isMe ? const Color(0xFFFFE6D5) : Colors.white,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(14),
                       topRight: const Radius.circular(14),
-                      bottomLeft: Radius.circular(isMe ? 14 : 2), // 异型切角
+                      bottomLeft: Radius.circular(isMe ? 14 : 2),
                       bottomRight: Radius.circular(isMe ? 2 : 14),
                     ),
-                    boxShadow: [
-                      if (!isMe)
-                        BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))
-                    ],
                   ),
                   child: Text(
                     msg['text'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isMe ? const Color(0xFF6B3A1A) : const Color(0xFF333333),
-                      height: 1.4,
-                    ),
+                    style: TextStyle(fontSize: 14, color: isMe ? const Color(0xFF6B3A1A) : const Color(0xFF333333), height: 1.4),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -194,15 +352,13 @@ class _HumanServiceViewState extends State<HumanServiceView> {
               ],
             ),
           ),
-
-          // 右侧我的头像
           if (isMe) ...[
             const SizedBox(width: 8),
             Container(
               width: 36,
               height: 36,
               decoration: const BoxDecoration(color: Color(0xFFE0E0E0), shape: BoxShape.circle),
-              child: const Center(child: Text('🍳', style: TextStyle(fontSize: 18))), // 可替换为用户真实头像
+              child: Center(child: Text(avatar, style: const TextStyle(fontSize: 18))),
             ),
           ],
         ],
@@ -210,7 +366,6 @@ class _HumanServiceViewState extends State<HumanServiceView> {
     );
   }
 
-  // 2. 底部复合输入控制栏
   Widget _buildBottomChatInput() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -220,70 +375,43 @@ class _HumanServiceViewState extends State<HumanServiceView> {
       ),
       child: Row(
         children: [
-          // 快捷加号扩展（发图片/拍摄）
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF666666), size: 26),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 10),
-
-          // 核心胶囊文本框
           Expanded(
             child: Container(
               height: 40,
               padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F6F7),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _msgController,
-                      style: const TextStyle(fontSize: 14),
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
-                      decoration: const InputDecoration(
-                        hintText: '描述您遇到的问题...',
-                        hintStyle: TextStyle(color: Color(0xFFBBBBBB), fontSize: 13),
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ),
-                  // 语音键
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: const Icon(Icons.mic_none, color: Color(0xFFFF8A4C), size: 22),
-                    onPressed: () {},
-                  ),
-                ],
+              decoration: BoxDecoration(color: const Color(0xFFF5F6F7), borderRadius: BorderRadius.circular(20)),
+              child: TextField(
+                controller: _msgController,
+                enabled: !_sending,
+                style: const TextStyle(fontSize: 14),
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _sendMessage(),
+                decoration: InputDecoration(
+                  hintText: _isHumanMode ? '描述您遇到的问题...' : '请输入您的问题，AI将基于知识库为您解答...',
+                  hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 13),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
               ),
             ),
           ),
           const SizedBox(width: 10),
-
-          // 发送按钮（深度对齐大橙色调圆扣）
           InkWell(
-            onTap: _sendMessage,
+            onTap: _sending ? null : _sendMessage,
             borderRadius: BorderRadius.circular(20),
             child: Container(
               width: 40,
               height: 40,
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFFF955B), Color(0xFFFF6A1A)],
-                ),
+                gradient: LinearGradient(colors: [Color(0xFFFF955B), Color(0xFFFF6A1A)]),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.send, color: Colors.white, size: 16),
+              child: _sending
+                  ? const Padding(padding: EdgeInsets.all(10), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.send, color: Colors.white, size: 16),
             ),
-          )
+          ),
         ],
       ),
     );

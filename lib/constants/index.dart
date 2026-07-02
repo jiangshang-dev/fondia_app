@@ -18,6 +18,7 @@ class HttpConstants {
   static const String USER_PROFILE = '/user/profile';
   static const String USER_UPLOAD = '/user/upload';
   static const String USER_INFO = '/user/auth/info';
+  static const String USER_FEEDBACK_SUBMIT = '/user/feedback/submit';
 
   // 菜谱/菜品
   static const String CUISINE_CATEGORY = '/cuisine/category';
@@ -45,5 +46,15 @@ class HttpConstants {
   static const String INTERACTION_LIKE_STATUS = '/interaction/like/status';
   static const String INTERACTION_BROWSE_MY = '/interaction/browse/my';
   static const String INTERACTION_BROWSE_RECORD = '/interaction/browse/record';
+
+  // 在线客服
+  static const String SUPPORT_CONFIG = '/support/config';
+  static const String SUPPORT_FAQ_LIST = '/support/faq/list';
+  static const String SUPPORT_QUICK_ENTRY_LIST = '/support/quick-entry/list';
+  static const String SUPPORT_AI_CHAT = '/support/ai/chat';
+  static const String SUPPORT_SESSION_TRANSFER = '/support/session/transfer';
+  static const String SUPPORT_SESSION_ACTIVE = '/support/session/active';
+  static const String SUPPORT_SESSION_MESSAGES = '/support/session';
+  static const String SUPPORT_SESSION_CLOSE = '/support/session';
 }
 
