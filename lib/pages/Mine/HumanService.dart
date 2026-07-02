@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -35,6 +36,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
   bool _loading = true;
   bool _sending = false;
   WebSocketChannel? _wsChannel;
+  Timer? _pollTimer;
 
   bool get _isHumanMode => _sessionStatus == 'WAITING' || _sessionStatus == 'CHATTING';
 
@@ -108,20 +110,13 @@ class _HumanServiceViewState extends State<HumanServiceView> {
       try {
         final json = jsonDecode(event.toString());
         if (json['cmd'] == 'CHAT_PUSH') {
-          final data = json['data'];
-          if (data != null) {
-            setState(() {
-              _chatMessages.add({
-                'isMe': false,
-                'isAi': data['senderType'] == 'AI',
-                'time': _formatTime(data['createTime']),
-                'text': data['content']?.toString() ?? '',
-              });
-            });
-            _scrollToBottom();
-          }
+          _loadHistory();
         }
       } catch (_) {}
+    });
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (_isHumanMode) _loadHistory();
     });
   }
 
@@ -185,13 +180,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
   }
 
   Future<void> _sendHumanMessage(String text) async {
-    if (_wsChannel == null) return;
-    _wsChannel!.sink.add(jsonEncode({
-      'cmd': 'CHAT_SEND',
-      'sessionId': _sessionId,
-      'data': {'content': text, 'clientMsgId': DateTime.now().millisecondsSinceEpoch.toString()},
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    }));
+    if (_sessionId == null) return;
     setState(() {
       _chatMessages.add({
         'isMe': true,
@@ -201,6 +190,14 @@ class _HumanServiceViewState extends State<HumanServiceView> {
       });
     });
     _scrollToBottom();
+    try {
+      await SupportApi.sendHumanMessage(_sessionId!, text);
+      await _loadHistory();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('发送失败: $e')));
+      }
+    }
   }
 
   void _sendMessage() async {
@@ -229,6 +226,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _wsChannel?.sink.close();
     _msgController.dispose();
     _scrollController.dispose();

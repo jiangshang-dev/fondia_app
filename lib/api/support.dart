@@ -57,6 +57,13 @@ class SupportApi {
     return [];
   }
 
+  static Future<void> sendHumanMessage(String sessionId, String content) async {
+    await _http.post(
+      '${HttpConstants.SUPPORT_SESSION_MESSAGES}/$sessionId/message',
+      data: {'content': content},
+    );
+  }
+
   static Future<void> closeSession(String sessionId) async {
     await _http.post('${HttpConstants.SUPPORT_SESSION_CLOSE}/$sessionId/close');
   }
