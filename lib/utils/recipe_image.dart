@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fondia/constants/index.dart';
 
@@ -24,10 +25,18 @@ String encodeHttpImageUrl(String url) {
   if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
     return trimmed;
   }
-  final uri = Uri.tryParse(trimmed);
-  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return trimmed;
 
-  final encodedPath = uri.path.split('/').map((segment) {
+  final match = RegExp(r'^(https?):\/\/([^/?#]+)([^?#]*)(\?[^#]*)?(#.*)?$')
+      .firstMatch(trimmed);
+  if (match == null) return trimmed;
+
+  final scheme = match.group(1)!;
+  final authority = match.group(2)!;
+  final path = match.group(3) ?? '';
+  final query = match.group(4);
+  final fragment = match.group(5);
+
+  final encodedPath = path.split('/').map((segment) {
     if (segment.isEmpty) return segment;
     try {
       return Uri.encodeComponent(Uri.decodeComponent(segment));
@@ -36,15 +45,10 @@ String encodeHttpImageUrl(String url) {
     }
   }).join('/');
 
-  return Uri(
-    scheme: uri.scheme,
-    userInfo: uri.userInfo.isEmpty ? null : uri.userInfo,
-    host: uri.host,
-    port: uri.hasPort ? uri.port : null,
-    path: encodedPath,
-    query: uri.query.isEmpty ? null : uri.query,
-    fragment: uri.fragment.isEmpty ? null : uri.fragment,
-  ).toString();
+  final buffer = StringBuffer('$scheme://$authority$encodedPath');
+  if (query != null) buffer.write(query);
+  if (fragment != null) buffer.write(fragment);
+  return buffer.toString();
 }
 
 String _networkImageUrl(String url) {
@@ -52,7 +56,7 @@ String _networkImageUrl(String url) {
   return encodeHttpImageUrl(resolved);
 }
 
-/// 专用 Dio，避免走业务拦截器
+/// 专用 Dio，避免走业务拦截器（仅 App/桌面端使用）
 final Dio _imageDio = Dio(BaseOptions(
   responseType: ResponseType.bytes,
   connectTimeout: const Duration(seconds: 15),
@@ -80,6 +84,65 @@ Future<Uint8List?> _fetchImageBytes(String url) async {
     }
   } catch (_) {}
   return null;
+}
+
+Widget _recipeImageErrorBox() {
+  return Container(
+    color: const Color(0xFFF5F5F5),
+    alignment: Alignment.center,
+    child: Icon(Icons.broken_image, color: Colors.grey[400]),
+  );
+}
+
+Widget _recipeImageLoadingBox(double? progress) {
+  return Container(
+    color: const Color(0xFFF5F5F5),
+    alignment: Alignment.center,
+    child: SizedBox(
+      width: 24,
+      height: 24,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: Colors.orange,
+        value: progress,
+      ),
+    ),
+  );
+}
+
+/// Web 端走浏览器 img 标签展示，不受 XHR CORS 限制
+class _RecipeWebNetworkImage extends StatelessWidget {
+  final String url;
+  final BoxFit fit;
+  final double? width;
+  final double? height;
+
+  const _RecipeWebNetworkImage({
+    required this.url,
+    required this.fit,
+    this.width,
+    this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      _networkImageUrl(url),
+      fit: fit,
+      width: width,
+      height: height,
+      gaplessPlayback: true,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        final total = loadingProgress.expectedTotalBytes;
+        final loaded = loadingProgress.cumulativeBytesLoaded;
+        return _recipeImageLoadingBox(
+          total != null ? loaded / total : null,
+        );
+      },
+      errorBuilder: (_, __, ___) => _recipeImageErrorBox(),
+    );
+  }
 }
 
 class _RecipeNetworkImage extends StatefulWidget {
@@ -137,27 +200,11 @@ class _RecipeNetworkImageState extends State<_RecipeNetworkImage> {
         width: widget.width,
         height: widget.height,
         gaplessPlayback: true,
-        errorBuilder: (_, __, ___) => _errorBox(),
+        errorBuilder: (_, __, ___) => _recipeImageErrorBox(),
       );
     }
-    if (_failed) return _errorBox();
-    return Container(
-      color: const Color(0xFFF5F5F5),
-      alignment: Alignment.center,
-      child: const SizedBox(
-        width: 24,
-        height: 24,
-        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orange),
-      ),
-    );
-  }
-
-  Widget _errorBox() {
-    return Container(
-      color: const Color(0xFFF5F5F5),
-      alignment: Alignment.center,
-      child: Icon(Icons.broken_image, color: Colors.grey[400]),
-    );
+    if (_failed) return _recipeImageErrorBox();
+    return _recipeImageLoadingBox(null);
   }
 }
 
@@ -190,6 +237,13 @@ class RecipeImage extends StatelessWidget {
       );
     } else if (raw.startsWith('lib/') || raw.startsWith('assets/')) {
       child = Image.asset(raw, fit: fit, width: width, height: height);
+    } else if (kIsWeb) {
+      child = _RecipeWebNetworkImage(
+        url: raw,
+        fit: fit,
+        width: width,
+        height: height,
+      );
     } else {
       child = _RecipeNetworkImage(
         url: raw,

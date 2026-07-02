@@ -184,6 +184,8 @@ class AppLocalizations {
   String get describeProblem => _t('描述您遇到的问题...', '描述您遇到的問題...', 'Describe your issue...');
   String get askAiQuestion =>
       _t('请输入您的问题，AI将基于知识库为您解答...', '請輸入您的問題，AI將基於知識庫為您解答...', 'Ask a question — AI will answer from our knowledge base.');
+  String get needLoginService =>
+      _t('请先登录后使用客服功能', '請先登入後使用客服功能', 'Please log in to use customer service');
   String get faqSelfService => _t('常见问题自助', '常見問題自助', 'FAQ Self-Service');
   String get summonHuman => _t('召唤人工客服', '召喚人工客服', 'Talk to Live Agent');
   String get welcomeTag => _t('智能自助', '智能自助', 'AI Self-Service');

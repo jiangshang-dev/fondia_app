@@ -41,6 +41,8 @@ class _HumanServiceViewState extends State<HumanServiceView> {
 
   bool get _isHumanMode => _sessionStatus == 'WAITING' || _sessionStatus == 'CHATTING';
 
+  bool get _isLoggedIn => tokenManager.isLoggedIn();
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +55,10 @@ class _HumanServiceViewState extends State<HumanServiceView> {
       final l10n = mounted ? context.l10n : null;
       _privacyTip = config['privacyTip']?.toString() ?? l10n?.privacyTipDefault ?? '';
       _humanGreeting = config['humanGreeting']?.toString() ?? '';
+
+      if (!_isLoggedIn) {
+        return;
+      }
 
       if (widget.transferToHuman) {
         await _doTransfer();
@@ -204,6 +210,10 @@ class _HumanServiceViewState extends State<HumanServiceView> {
   }
 
   void _sendMessage() async {
+    if (!_isLoggedIn) {
+      _goLogin();
+      return;
+    }
     final text = _msgController.text.trim();
     if (text.isEmpty || _sending) return;
     _msgController.clear();
@@ -223,6 +233,14 @@ class _HumanServiceViewState extends State<HumanServiceView> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
+      }
+    });
+  }
+
+  void _goLogin() {
+    Navigator.pushNamed(context, '/login').then((_) {
+      if (mounted && _isLoggedIn) {
+        setState(() {});
       }
     });
   }
@@ -269,7 +287,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
         actions: [
           if (!_isHumanMode)
             TextButton(
-              onPressed: _doTransfer,
+              onPressed: _isLoggedIn ? _doTransfer : _goLogin,
               child: Text(l10n.transferToHuman, style: const TextStyle(color: Color(0xFFFF6A1A), fontSize: 13)),
             ),
         ],
@@ -369,6 +387,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
   }
 
   Widget _buildBottomChatInput(AppLocalizations l10n) {
+    final loggedIn = _isLoggedIn;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       decoration: const BoxDecoration(
@@ -378,40 +397,69 @@ class _HumanServiceViewState extends State<HumanServiceView> {
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(color: const Color(0xFFF5F6F7), borderRadius: BorderRadius.circular(20)),
-              child: TextField(
-                controller: _msgController,
-                enabled: !_sending,
-                style: const TextStyle(fontSize: 14),
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendMessage(),
-                decoration: InputDecoration(
-                  hintText: _isHumanMode ? l10n.describeProblem : l10n.askAiQuestion,
-                  hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 13),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ),
+            child: loggedIn
+                ? Container(
+                    height: 40,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(color: const Color(0xFFF5F6F7), borderRadius: BorderRadius.circular(20)),
+                    child: TextField(
+                      controller: _msgController,
+                      enabled: !_sending,
+                      style: const TextStyle(fontSize: 14),
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _sendMessage(),
+                      decoration: InputDecoration(
+                        hintText: _isHumanMode ? l10n.describeProblem : l10n.askAiQuestion,
+                        hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 13),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: _goLogin,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F6F7),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      alignment: Alignment.centerLeft,
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
+                          children: [
+                            TextSpan(text: '${l10n.needLoginService}，'),
+                            TextSpan(
+                              text: l10n.goLogin,
+                              style: const TextStyle(color: Color(0xFFFF6A1A), fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
           ),
           const SizedBox(width: 10),
           InkWell(
-            onTap: _sending ? null : _sendMessage,
+            onTap: !loggedIn || _sending ? null : _sendMessage,
             borderRadius: BorderRadius.circular(20),
             child: Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [Color(0xFFFF955B), Color(0xFFFF6A1A)]),
+              decoration: BoxDecoration(
+                gradient: loggedIn
+                    ? const LinearGradient(colors: [Color(0xFFFF955B), Color(0xFFFF6A1A)])
+                    : null,
+                color: loggedIn ? null : const Color(0xFFE0E0E0),
                 shape: BoxShape.circle,
               ),
               child: _sending
                   ? const Padding(padding: EdgeInsets.all(10), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.send, color: Colors.white, size: 16),
+                  : Icon(Icons.send, color: loggedIn ? Colors.white : const Color(0xFFBBBBBB), size: 16),
             ),
           ),
         ],
