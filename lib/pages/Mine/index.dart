@@ -4,11 +4,15 @@ import 'package:fondia/api/user.dart';
 import 'package:fondia/l10n/app_localizations.dart';
 import 'package:fondia/models/user_profile.dart';
 import 'package:fondia/pages/Mine/BrowsingHistory.dart';
+import 'package:fondia/pages/Mine/Checkin.dart';
 import 'package:fondia/pages/Mine/Collection.dart';
 import 'package:fondia/pages/Mine/Feedback.dart';
 import 'package:fondia/pages/Mine/Liked.dart';
 import 'package:fondia/pages/Mine/MyComment.dart';
 import 'package:fondia/pages/Mine/OnlineService.dart';
+import 'package:fondia/pages/Mine/PointsLedger.dart';
+import 'package:fondia/pages/Mine/PointsMall.dart';
+import 'package:fondia/pages/Mine/PointsTasks.dart';
 import 'package:fondia/pages/Mine/Setting.dart';
 import 'package:fondia/pages/Mine/UserInfo.dart';
 import 'package:fondia/pages/Mine/VIP.dart';
@@ -344,28 +348,40 @@ class _MineViewState extends State<MineView> {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  l10n.pointsDetail,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                child: GestureDetector(
+                  onTap: () {
+                    if (!tokenManager.isLoggedIn()) {
+                      _navigateToLogin();
+                      return;
+                    }
+                    _openPage(const PointsLedgerView());
+                  },
+                  child: Text(
+                    l10n.pointsDetail,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
                 ),
               ),
             ],
           ),
-          _buildPointsIcon(Icons.assignment_turned_in, l10n.earnPoints),
-          _buildPointsIcon(Icons.calendar_month, l10n.dailyCheckIn),
-          _buildPointsIcon(Icons.shopping_bag, l10n.pointsMall),
+          _buildPointsIcon(Icons.assignment_turned_in, l10n.earnPoints, () => _openPage(const PointsTasksView())),
+          _buildPointsIcon(Icons.calendar_month, l10n.dailyCheckIn, () => _openPage(const CheckinView())),
+          _buildPointsIcon(Icons.shopping_bag, l10n.pointsMall, () => _openPage(const PointsMallView())),
         ],
       ),
     );
   }
 
-  Widget _buildPointsIcon(IconData icon, String label) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white, size: 30),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
-      ],
+  Widget _buildPointsIcon(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white, size: 30),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+        ],
+      ),
     );
   }
 
@@ -423,14 +439,9 @@ class _MineViewState extends State<MineView> {
           _buildGridItem(
             Icons.vaccines,
             l10n.vipCenter,
-            "56",
+            tokenManager.isLoggedIn() ? '' : '-',
             color: Colors.red,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const VipView()),
-              );
-            },
+            onTap: () => _openPage(const VipView()),
           ),
           // 跳转到收藏页面
           _buildGridItem(

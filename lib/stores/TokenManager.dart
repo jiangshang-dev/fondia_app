@@ -114,6 +114,10 @@ class TokenManager {
     return _userInfoMap?['sign'] ?? '爱生活，爱美食，爱分享每一道好菜~';
   }
 
+  String? getUserId() {
+    return _userInfoMap?['id']?.toString();
+  }
+
   Future<void> removeToken() async {
     final prefs = await _getInstance();
     prefs.remove(GlobalConstants.TOKEN_KEY);

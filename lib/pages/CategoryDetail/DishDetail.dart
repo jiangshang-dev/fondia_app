@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/api/cuisine.dart';
 import 'package:fondia/api/interaction.dart';
+import 'package:fondia/api/member.dart';
 import 'package:fondia/models/recipe_models.dart';
 import 'package:fondia/components/RecipeVideoPlayer.dart';
 import 'package:fondia/pages/CategoryDetail/CommentSection.dart';
@@ -50,6 +51,7 @@ class _DishDetailState extends State<DishDetail> {
       CuisineApi.incrementView(widget.recipeId).catchError((_) {});
       if (tokenManager.isLoggedIn()) {
         InteractionApi.recordBrowse(widget.recipeId).catchError((_) {});
+        MemberApi.completePointsTask('DAILY_BROWSE', bizRef: widget.recipeId).catchError((_) {});
       }
       if (!mounted) return;
       setState(() {

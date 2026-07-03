@@ -89,10 +89,8 @@ class _CategoryViewState extends State<CategoryView> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CategoryDetailView(
-          cuisineId: cuisineId,
-          initialSubType: subType,
-        ),
+        builder: (_) =>
+            CategoryDetailView(cuisineId: cuisineId, initialSubType: subType),
       ),
     );
   }
@@ -156,8 +154,9 @@ class _CategoryViewState extends State<CategoryView> {
                       style: TextStyle(
                         color: isSelected ? Colors.black : Colors.grey[600],
                         fontSize: 15,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -172,101 +171,99 @@ class _CategoryViewState extends State<CategoryView> {
                     child: CircularProgressIndicator(color: Colors.orange),
                   )
                 : _error != null && sections.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_error!),
-                            TextButton(
-                              onPressed: () =>
-                                  _loadTree(_cuisines[_selectedIndex].id),
-                              child: Text(l10n.retry),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!),
+                        TextButton(
+                          onPressed: () =>
+                              _loadTree(_cuisines[_selectedIndex].id),
+                          child: Text(l10n.retry),
                         ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: sections.length,
-                        itemBuilder: (context, index) {
-                          final section = sections[index];
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: sections.length,
+                    itemBuilder: (context, index) {
+                      final section = sections[index];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    section.title,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () => _openCuisineDetail(
-                                      _cuisines[_selectedIndex].id,
-                                      subType: section.subType,
-                                    ),
-            child: Text(
-                                      l10n.more,
-                                      style: TextStyle(
-                                        color: Colors.grey[500],
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                section.title,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              const SizedBox(height: 16),
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                              GestureDetector(
+                                onTap: () => _openCuisineDetail(
+                                  _cuisines[_selectedIndex].id,
+                                  subType: section.subType,
+                                ),
+                                child: Text(
+                                  l10n.more,
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 4,
                                   mainAxisExtent: 100,
                                   crossAxisSpacing: 12,
                                   mainAxisSpacing: 12,
                                 ),
-                                itemCount: section.recipes.length,
-                                itemBuilder: (context, itemIndex) {
-                                  final item = section.recipes[itemIndex];
-                                  return GestureDetector(
-                                    onTap: () => _openRecipeDetail(item.id),
-                                    child: Column(
-                                      children: [
-                                        SizedBox(
-                                          width: 60,
-                                          height: 60,
-                                          child: RecipeImage(
-                                            url: item.coverImage,
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          item.title,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                            itemCount: section.recipes.length,
+                            itemBuilder: (context, itemIndex) {
+                              final item = section.recipes[itemIndex];
+                              return GestureDetector(
+                                onTap: () => _openRecipeDetail(item.id),
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      width: 60,
+                                      height: 60,
+                                      child: RecipeImage(
+                                        url: item.coverImage,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 24),
-                            ],
-                          );
-                        },
-                      ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      item.title,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      );
+                    },
+                  ),
           ),
         ],
       ),

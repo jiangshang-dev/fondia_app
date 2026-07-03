@@ -3,7 +3,7 @@
  */
 
 class GlobalConstants {
-  static const String BASE_URL = 'http://localhost:9999';
+  static const String BASE_URL = 'http://192.168.18.198:9999';
   static const int TIME_OUT = 10;
   static const int SUCCESS_CODE = 200; // 成功
   static const String TOKEN_KEY = "hm_fondia_token"; // token持久化的key
@@ -59,5 +59,26 @@ class HttpConstants {
 
   // 搜索
   static const String SEARCH_RECIPE = '/search/recipe';
+
+  // 会员 / 积分 / 签到 / 商城
+  static const String MEMBER_PLANS = '/member/plans';
+  static const String MEMBER_STATUS = '/member/status';
+  static const String MEMBER_ORDER_CREATE = '/member/order/create';
+  static const String MEMBER_POINTS_SUMMARY = '/member/points/summary';
+  static const String MEMBER_POINTS_LEDGER = '/member/points/ledger';
+  static const String MEMBER_POINTS_TASKS = '/member/points/tasks';
+  static const String MEMBER_CHECKIN_CONFIG = '/member/checkin/config';
+  static const String MEMBER_CHECKIN_TODAY = '/member/checkin/today';
+  static const String MEMBER_CHECKIN_DO = '/member/checkin/do';
+  static const String MEMBER_MALL_PRODUCTS = '/member/mall/products';
+  static const String MEMBER_MALL_PRODUCT_DETAIL = '/member/mall/product/detail';
+  static const String MEMBER_MALL_REDEEM = '/member/mall/redeem';
+  static const String MEMBER_MALL_ORDERS = '/member/mall/orders';
+  static const String MEMBER_ADDRESS_LIST = '/member/address/list';
+  static const String MEMBER_ADDRESS_SAVE = '/member/address/save';
+  static const String MEMBER_ADDRESS_DEFAULT = '/member/address/default';
+  static const String MEMBER_ADDRESS_DELETE = '/member/address/delete';
+  static const String MEMBER_POINTS_TASK_COMPLETE = '/member/points/task/complete';
+  static const String MEMBER_ORDER_PAY_CONFIRM = '/member/order/pay/confirm';
 }
 

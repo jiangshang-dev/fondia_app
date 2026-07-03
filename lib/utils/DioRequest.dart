@@ -71,17 +71,16 @@ class DioRequest {
     return _handleResponse(_dio.get(url, queryParameters: params));
   }
 
-  // 定义post
-  Future<dynamic> post(String url, {Map<String, dynamic>? data}) {
-    return _handleResponse(_dio.post(url, data: data));
+  Future<dynamic> post(String url, {Map<String, dynamic>? data, Map<String, dynamic>? params}) {
+    return _handleResponse(_dio.post(url, data: data, queryParameters: params));
   }
 
   Future<dynamic> put(String url, {Map<String, dynamic>? data}) {
     return _handleResponse(_dio.put(url, data: data));
   }
 
-  Future<dynamic> delete(String url) {
-    return _handleResponse(_dio.delete(url));
+  Future<dynamic> delete(String url, {Map<String, dynamic>? params}) {
+    return _handleResponse(_dio.delete(url, queryParameters: params));
   }
 
   Future<dynamic> uploadFile(
