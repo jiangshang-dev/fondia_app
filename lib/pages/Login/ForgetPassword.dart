@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/api/login.dart';
 import 'package:fondia/components/common/FondiaAppBar.dart';
 import 'package:fondia/components/common/LoginWelcomeHeader.dart';
 import 'package:fondia/components/common/PrimaryButton.dart';
 import 'package:fondia/components/common/RoundedFormField.dart';
 import 'package:fondia/components/common/VerificationCodeField.dart';
 import 'package:fondia/constants/AppTheme.dart';
+import 'package:fondia/utils/DioRequest.dart';
 
 class ForgetPasswordView extends StatefulWidget {
   const ForgetPasswordView({super.key});
@@ -18,33 +20,69 @@ class _ForgetPasswordViewState extends State<ForgetPasswordView> {
   final TextEditingController _accountController = TextEditingController();
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool _obscureText = true;
+  bool _obscureConfirm = true;
+  bool _submitting = false;
 
   Future<bool> _sendVerificationCode() async {
-    if (_accountController.text.isEmpty) {
+    final account = _accountController.text.trim();
+    if (account.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('请输入绑定的手机号或邮箱')),
       );
       return false;
     }
-    // TODO: 对接发送验证码 API
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('验证码已发送，请注意查收')),
-      );
+
+    try {
+      await LoginApi.sendResetPasswordCode(account);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('验证码已发送，请注意查收')),
+        );
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(dioErrorMessage(e, fallback: '发送验证码失败'))),
+        );
+      }
+      return false;
     }
-    return true;
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('两次输入密码不一致')),
+      );
+      return;
+    }
 
-    // TODO: 对接重置密码 API
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('密码重置成功，请重新登录')),
-    );
-    Navigator.of(context).pop();
+    setState(() => _submitting = true);
+    try {
+      await LoginApi.resetPassword(
+        account: _accountController.text.trim(),
+        code: _codeController.text.trim(),
+        newPassword: _passwordController.text,
+        confirmPassword: _confirmPasswordController.text,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('密码重置成功，请重新登录')),
+      );
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(dioErrorMessage(e, fallback: '密码重置失败'))),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -52,6 +90,7 @@ class _ForgetPasswordViewState extends State<ForgetPasswordView> {
     _accountController.dispose();
     _codeController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -108,8 +147,32 @@ class _ForgetPasswordViewState extends State<ForgetPasswordView> {
                     onPressed: () => setState(() => _obscureText = !_obscureText),
                   ),
                 ),
+                const SizedBox(height: 20),
+                RoundedFormField(
+                  controller: _confirmPasswordController,
+                  hintText: '请再次输入新密码',
+                  prefixIcon: Icons.lock_open_outlined,
+                  obscureText: _obscureConfirm,
+                  validator: (val) {
+                    if (val == null || val.isEmpty) return '请确认新密码';
+                    if (val != _passwordController.text) return '两次输入密码不一致';
+                    return null;
+                  },
+                  suffix: IconButton(
+                    icon: Icon(
+                      _obscureConfirm
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: AppColors.textDisabled,
+                    ),
+                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                  ),
+                ),
                 const SizedBox(height: 40),
-                PrimaryButton(text: '确 认 重 置', onPressed: _handleSubmit),
+                PrimaryButton(
+                  text: _submitting ? '提交中...' : '确 认 重 置',
+                  onPressed: _submitting ? null : _handleSubmit,
+                ),
               ],
             ),
           ),

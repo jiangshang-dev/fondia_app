@@ -12,13 +12,19 @@ class GlobalConstants {
 class HttpConstants {
   static const String SEND_EMAIL_CODE = '/user/auth/sendEmailCode';
   static const String EMAIL_LOGIN = '/user/auth/emailLogin';
-  static const String PASSWORD_LOGIN = '/user/auth/login';
+  static const String PASSWORD_LOGIN = '/user/auth/passwordLogin';
+  static const String SEND_RESET_PASSWORD_CODE = '/user/auth/sendResetPasswordCode';
+  static const String RESET_PASSWORD = '/user/auth/resetPassword';
 
   // 用户资料
   static const String USER_PROFILE = '/user/profile';
   static const String USER_UPLOAD = '/user/upload';
   static const String USER_INFO = '/user/auth/info';
   static const String USER_FEEDBACK_SUBMIT = '/user/feedback/submit';
+  static const String USER_ACCOUNT_DELETE_PREVIEW = '/user/account/deletePreview';
+  static const String USER_ACCOUNT_SEND_DELETE_CODE = '/user/account/sendDeleteCode';
+  static const String USER_ACCOUNT_DELETE = '/user/account/delete';
+  static const String USER_ACCOUNT_CHANGE_PASSWORD = '/user/account/changePassword';
 
   // 菜谱/菜品
   static const String CUISINE_CATEGORY = '/cuisine/category';

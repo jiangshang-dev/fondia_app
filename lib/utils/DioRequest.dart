@@ -102,21 +102,43 @@ class DioRequest {
       Response<dynamic> result = await task;
       final data = result.data as Map<String, dynamic>;
       if (data["code"] == GlobalConstants.SUCCESS_CODE) {
-        // 只要result结果
         return data["result"];
       }
-      // 抛出异常
-      // throw Exception(data['msg']??'加载数据异常');
       throw DioException(
         requestOptions: result.requestOptions,
-        message: data['msg'] ?? '加载数据异常',
+        message: _extractApiMessage(data),
       );
     } catch (e) {
-      // throw Exception(e);
-      // 不改变原来抛出的异常类型
       rethrow;
     }
   }
+
+  static String _extractApiMessage(Map<String, dynamic> data) {
+    final msg = data['msg'] ?? data['message'];
+    if (msg != null && msg.toString().isNotEmpty) {
+      return msg.toString();
+    }
+    return '加载数据异常';
+  }
+}
+
+/// 从 Dio 或业务异常中提取可读错误信息
+String dioErrorMessage(Object error, {String fallback = '请求失败'}) {
+  if (error is DioException) {
+    final message = error.message;
+    if (message != null && message.isNotEmpty) {
+      return message;
+    }
+    return fallback;
+  }
+  final text = error.toString();
+  if (text.startsWith('DioException')) {
+    final idx = text.indexOf(': ');
+    if (idx >= 0 && idx + 2 < text.length) {
+      return text.substring(idx + 2);
+    }
+  }
+  return text.replaceFirst('Exception: ', '').replaceFirst('DioException: ', '');
 }
 
 // 单例对象

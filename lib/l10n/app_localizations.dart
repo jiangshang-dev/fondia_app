@@ -87,6 +87,18 @@ class AppLocalizations {
   String get privacyPolicy => _t('隐私政策', '隱私政策', 'Privacy Policy');
   String get aboutFondia => _t('关于饭典', '關於飯典', 'About Fondia');
   String get rateUs => _t('给我们评分', '給我們評分', 'Rate Us');
+  String get appName => _t('饭典', '飯典', 'Fondia');
+  String get aboutFondiaTagline => _t(
+        '爱生活，爱美食，爱分享每一道好菜~',
+        '愛生活，愛美食，愛分享每一道好菜~',
+        'Love life, love food, love sharing every great dish~',
+      );
+  String get rateUsThanks => _t('感谢您的支持', '感謝您的支持', 'Thank you for your support');
+  String get rateUsMessage => _t(
+        '您的认可是我们前进的动力，请前往应用商店为饭典评分。',
+        '您的認可是我們前進的動力，請前往應用商店為飯典評分。',
+        'Your feedback keeps us going. Please rate Fondia in the app store.',
+      );
   String get logout => _t('退出登录', '退出登入', 'Log Out');
   String get notificationSettings => _t('通知设置', '通知設定', 'Notification Settings');
 

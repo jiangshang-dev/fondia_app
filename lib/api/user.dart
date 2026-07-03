@@ -2,6 +2,30 @@ import 'package:fondia/constants/index.dart';
 import 'package:fondia/models/user_profile.dart';
 import 'package:fondia/utils/DioRequest.dart';
 
+class AccountDeletePreview {
+  final String verifyType;
+  final String maskedContact;
+
+  AccountDeletePreview({
+    required this.verifyType,
+    required this.maskedContact,
+  });
+
+  factory AccountDeletePreview.fromJson(Map<String, dynamic> json) {
+    return AccountDeletePreview(
+      verifyType: json['verifyType']?.toString() ?? 'phone',
+      maskedContact: json['maskedContact']?.toString() ?? '',
+    );
+  }
+
+  String get codeHint {
+    if (verifyType == 'email') {
+      return '输入已绑定邮箱 $maskedContact 的验证码';
+    }
+    return '输入已绑定手机 $maskedContact 的验证码';
+  }
+}
+
 class UserApi {
   static final DioRequest _http = dioRequest;
 
@@ -37,6 +61,31 @@ class UserApi {
       'content': content,
       if (contact != null && contact.trim().isNotEmpty) 'contact': contact.trim(),
       'images': images ?? [],
+    });
+  }
+
+  static Future<AccountDeletePreview> getDeletePreview() async {
+    final result = await _http.get(HttpConstants.USER_ACCOUNT_DELETE_PREVIEW);
+    return AccountDeletePreview.fromJson(result as Map<String, dynamic>);
+  }
+
+  static Future<void> sendDeleteCode() async {
+    await _http.post(HttpConstants.USER_ACCOUNT_SEND_DELETE_CODE);
+  }
+
+  static Future<void> deleteAccount(String code) async {
+    await _http.post(HttpConstants.USER_ACCOUNT_DELETE, data: {'code': code});
+  }
+
+  static Future<void> changePassword({
+    String? oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await _http.post(HttpConstants.USER_ACCOUNT_CHANGE_PASSWORD, data: {
+      if (oldPassword != null && oldPassword.isNotEmpty) 'oldPassword': oldPassword,
+      'newPassword': newPassword,
+      'confirmPassword': confirmPassword,
     });
   }
 

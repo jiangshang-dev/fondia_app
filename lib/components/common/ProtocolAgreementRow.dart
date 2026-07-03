@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/constants/AppTheme.dart';
+import 'package:fondia/constants/LegalContent.dart';
+import 'package:fondia/pages/Mine/LegalDocument.dart';
 
 enum ProtocolCheckboxStyle { icon, checkbox, circle }
 
@@ -85,36 +87,57 @@ class ProtocolAgreementRow extends StatelessWidget {
     final linkStyle = TextStyle(color: AppColors.primary, fontSize: fontSize);
     final baseStyle = TextStyle(color: AppColors.textHint, fontSize: fontSize);
 
+    void openLegal(BuildContext context, LegalDocType type) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LegalDocumentView(docType: type)),
+      );
+    }
+
     if (style == ProtocolCheckboxStyle.checkbox && suffixText != null) {
-      return Text.rich(
-        TextSpan(
-          text: '我已阅读并同意',
-          style: baseStyle.copyWith(height: 1.3),
-          children: [
-            TextSpan(text: '《用户服务协议》', style: linkStyle),
-            const TextSpan(text: '与'),
-            TextSpan(text: '《隐私政策》', style: linkStyle),
-            TextSpan(text: suffixText),
-          ],
+      return Builder(
+        builder: (context) => Text.rich(
+          TextSpan(
+            text: '我已阅读并同意',
+            style: baseStyle.copyWith(height: 1.3),
+            children: [
+              WidgetSpan(
+                child: GestureDetector(
+                  onTap: () => openLegal(context, LegalDocType.user),
+                  child: Text('《用户服务协议》', style: linkStyle),
+                ),
+              ),
+              const TextSpan(text: '与'),
+              WidgetSpan(
+                child: GestureDetector(
+                  onTap: () => openLegal(context, LegalDocType.privacy),
+                  child: Text('《隐私政策》', style: linkStyle),
+                ),
+              ),
+              TextSpan(text: suffixText),
+            ],
+          ),
         ),
       );
     }
 
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Text('我已阅读并同意 ', style: baseStyle),
-        GestureDetector(
-          onTap: () {},
-          child: Text('《用户协议》', style: linkStyle),
-        ),
-        Text(' 和 ', style: baseStyle),
-        GestureDetector(
-          onTap: () {},
-          child: Text('《隐私政策》', style: linkStyle),
-        ),
-        if (suffixText != null) Text(suffixText!, style: baseStyle),
-      ],
+    return Builder(
+      builder: (context) => Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text('我已阅读并同意 ', style: baseStyle),
+          GestureDetector(
+            onTap: () => openLegal(context, LegalDocType.user),
+            child: Text('《用户协议》', style: linkStyle),
+          ),
+          Text(' 和 ', style: baseStyle),
+          GestureDetector(
+            onTap: () => openLegal(context, LegalDocType.privacy),
+            child: Text('《隐私政策》', style: linkStyle),
+          ),
+          if (suffixText != null) Text(suffixText!, style: baseStyle),
+        ],
+      ),
     );
   }
 }

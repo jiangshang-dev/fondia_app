@@ -8,7 +8,7 @@ import 'package:fondia/components/common/RoundedFormField.dart';
 import 'package:fondia/constants/AppTheme.dart';
 import 'package:fondia/pages/Login/ForgetPassword.dart';
 import 'package:fondia/pages/Main/index.dart';
-import 'package:fondia/stores/TokenManager.dart';
+import 'package:fondia/utils/DioRequest.dart';
 
 class PasswordLoginView extends StatefulWidget {
   const PasswordLoginView({super.key});
@@ -37,12 +37,11 @@ class _PasswordLoginViewState extends State<PasswordLoginView> {
 
     try {
       final result = await LoginApi.passwordLogin(
-        _accountController.text,
+        _accountController.text.trim(),
         _passwordController.text,
       );
       if (result != null) {
-        await tokenManager.setToken(result['token'] ?? '');
-        await tokenManager.saveUserInfo(result['userInfo'] ?? {});
+        await LoginApi.saveLoginResult(result);
 
         if (mounted) {
           Navigator.pushAndRemoveUntil(
@@ -55,7 +54,7 @@ class _PasswordLoginViewState extends State<PasswordLoginView> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('登录失败，请检查账号和密码')),
+          SnackBar(content: Text(dioErrorMessage(e, fallback: '登录失败，请检查账号和密码'))),
         );
       }
     }
@@ -116,12 +115,11 @@ class _PasswordLoginViewState extends State<PasswordLoginView> {
                     padding: const EdgeInsets.only(top: 10, right: 12),
                     child: TextButton(
                       onPressed: () {
-                        Navigator.pushAndRemoveUntil(
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const ForgetPasswordView(),
                           ),
-                          (route) => false,
                         );
                       },
                       style: TextButton.styleFrom(

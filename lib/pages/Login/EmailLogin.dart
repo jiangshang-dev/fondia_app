@@ -8,7 +8,7 @@ import 'package:fondia/components/common/RoundedFormField.dart';
 import 'package:fondia/components/common/VerificationCodeField.dart';
 import 'package:fondia/constants/AppTheme.dart';
 import 'package:fondia/pages/Main/index.dart';
-import 'package:fondia/stores/TokenManager.dart';
+import 'package:fondia/utils/DioRequest.dart';
 
 class EmailLoginView extends StatefulWidget {
   const EmailLoginView({super.key});
@@ -46,7 +46,7 @@ class _EmailLoginViewState extends State<EmailLoginView> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('发送验证码失败: ${e.toString()}')),
+          SnackBar(content: Text(dioErrorMessage(e, fallback: '发送验证码失败'))),
         );
       }
       return false;
@@ -69,8 +69,7 @@ class _EmailLoginViewState extends State<EmailLoginView> {
     try {
       final result = await LoginApi.emailLogin(email, code);
       if (result != null) {
-        await tokenManager.setToken(result['token'] ?? '');
-        await tokenManager.saveUserInfo(result['userInfo'] ?? {});
+        await LoginApi.saveLoginResult(result);
 
         if (mounted) {
           Navigator.pushAndRemoveUntil(
@@ -83,7 +82,7 @@ class _EmailLoginViewState extends State<EmailLoginView> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('登录失败: ${e.toString()}')),
+          SnackBar(content: Text(dioErrorMessage(e, fallback: '登录失败'))),
         );
       }
     }
