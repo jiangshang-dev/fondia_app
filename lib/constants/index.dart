@@ -58,6 +58,9 @@ class HttpConstants {
   static const String SUPPORT_FAQ_LIST = '/support/faq/list';
   static const String SUPPORT_QUICK_ENTRY_LIST = '/support/quick-entry/list';
   static const String SUPPORT_AI_CHAT = '/support/ai/chat';
+  static const String SUPPORT_AI_SESSIONS = '/support/ai/sessions';
+  static const String SUPPORT_AI_SESSION_NEW = '/support/ai/session/new';
+  static const String SUPPORT_AI_SESSION_ACTIVE = '/support/ai/session/active';
   static const String SUPPORT_SESSION_TRANSFER = '/support/session/transfer';
   static const String SUPPORT_SESSION_ACTIVE = '/support/session/active';
   static const String SUPPORT_SESSION_MESSAGES = '/support/session';

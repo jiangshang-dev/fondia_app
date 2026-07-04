@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/pages/Ai/AiExclusive.dart';
 import 'package:fondia/pages/AiChat/index.dart';
 
 class AiView extends StatefulWidget {
@@ -153,7 +154,14 @@ class _AiViewState extends State<AiView> {
   }
 
   Widget _buildDemandItem(String name, String sub, IconData icon, Color color) {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => AiChatView(initialConsultType: name)),
+        );
+      },
+      child: Container(
       width: 85,
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
@@ -175,6 +183,7 @@ class _AiViewState extends State<AiView> {
           Text(sub, style: const TextStyle(fontSize: 9, color: Colors.grey), textAlign: TextAlign.center),
         ],
       ),
+    ),
     );
   }
 
@@ -253,10 +262,18 @@ class _AiViewState extends State<AiView> {
                   ],
                 ),
               ),
-              Container(
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AiExclusiveView()),
+                  );
+                },
+                child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(20)),
                 child: const Text("去咨询 >", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
               )
             ],
           ),
@@ -277,11 +294,21 @@ class _AiViewState extends State<AiView> {
   }
 
   Widget _buildQueryChip(String text) {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AiExclusiveView(initialMessage: text, newSession: true),
+          ),
+        );
+      },
+      child: Container(
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.withOpacity(0.1))),
       child: Text(text, style: const TextStyle(fontSize: 11, color: Colors.black87)),
+    ),
     );
   }
 
