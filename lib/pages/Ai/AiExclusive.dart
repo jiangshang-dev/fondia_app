@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/components/common/AiMarkdownBody.dart';
 import 'package:fondia/api/support.dart';
 import 'package:fondia/models/ai_chat_models.dart';
 import 'package:fondia/pages/Ai/AiChatHistory.dart';
@@ -491,19 +492,10 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    msg.text,
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF333333), height: 1.5),
+                  AiMarkdownBody(
+                    data: msg.text,
+                    showCursor: msg.isStreaming,
                   ),
-                  if (msg.isStreaming)
-                    const Text(
-                      ' ▍',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFFFF8A4C),
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
                   if (msg.recipes.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     ...msg.recipes.map(_buildRecipeCard),
