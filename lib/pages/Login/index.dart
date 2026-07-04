@@ -209,18 +209,16 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildSubLoginItem(Icons.mail_outline, l10n.emailLogin, () {
-                  Navigator.pushAndRemoveUntil(
+                  Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const EmailLoginView()),
-                    (route) => false,
                   );
                 }),
                 const SizedBox(width: 60),
                 _buildSubLoginItem(Icons.lock_open_outlined, l10n.passwordLogin, () {
-                  Navigator.pushAndRemoveUntil(
+                  Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const PasswordLoginView()),
-                    (route) => false,
                   );
                 }),
               ],
