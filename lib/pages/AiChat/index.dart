@@ -1,5 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:fondia/api/ai_quota.dart';
 import 'package:fondia/pages/Ai/AiExclusive.dart';
+import 'package:fondia/pages/Mine/VIP.dart';
+import 'package:fondia/stores/TokenManager.dart';
+import 'package:fondia/utils/DioRequest.dart';
 
 class AiChatView extends StatefulWidget {
   const AiChatView({super.key, this.initialConsultType});
@@ -31,6 +36,9 @@ class _AiChatViewState extends State<AiChatView> {
   final _weightController = TextEditingController();
   String? _condition;
   String? _goal;
+  Map<String, dynamic>? _quotaStatus;
+  bool _quotaLoading = false;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -38,6 +46,20 @@ class _AiChatViewState extends State<AiChatView> {
     if (widget.initialConsultType != null) {
       final idx = _consultTypes.indexWhere((e) => e.name == widget.initialConsultType);
       if (idx >= 0) _selectedTypeIndex = idx;
+    }
+    _loadQuotaStatus();
+  }
+
+  Future<void> _loadQuotaStatus() async {
+    if (!tokenManager.isLoggedIn()) return;
+    setState(() => _quotaLoading = true);
+    try {
+      final status = await AiQuotaApi.getStatus();
+      if (mounted) setState(() => _quotaStatus = status);
+    } catch (_) {
+      // 配额加载失败不阻塞表单填写
+    } finally {
+      if (mounted) setState(() => _quotaLoading = false);
     }
   }
 
@@ -128,21 +150,85 @@ class _AiChatViewState extends State<AiChatView> {
     if (picked != null) onPick(picked);
   }
 
-  void _submit() {
+  void _showLoginTip() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('需要登录'),
+        content: const Text('生成专属方案需要先登录账号'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pushNamed(context, '/login').then((_) => _loadQuotaStatus());
+            },
+            child: const Text('去登录'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuotaExceededDialog(String message) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('今日次数已用完'),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('知道了')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const VipView()));
+            },
+            child: const Text('开通会员'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
     if (_age == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请选择年龄')));
       return;
     }
-    final prompt = _buildPrompt();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AiExclusiveView(
-          initialMessage: prompt,
-          newSession: true,
+    if (!tokenManager.isLoggedIn()) {
+      _showLoginTip();
+      return;
+    }
+    if (_submitting) return;
+
+    setState(() => _submitting = true);
+    try {
+      final status = await AiQuotaApi.consume();
+      if (mounted) setState(() => _quotaStatus = status);
+
+      final prompt = _buildPrompt();
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AiExclusiveView(
+            initialMessage: prompt,
+            newSession: true,
+          ),
         ),
-      ),
-    );
+      );
+    } on DioException catch (e) {
+      final msg = e.message ?? '生成失败，请稍后重试';
+      if (msg.contains('次数') || msg.contains('用完')) {
+        _showQuotaExceededDialog(msg);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -453,25 +539,65 @@ class _AiChatViewState extends State<AiChatView> {
   }
 
   Widget _buildActionButton() {
-    return InkWell(
-      onTap: _submit,
-      child: Container(
-        width: double.infinity,
-        height: 50,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFFFFA726), Color(0xFFFF7043)]),
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5)),
-          ],
-        ),
-        child: const Center(
-          child: Text(
-            '开始生成专属方案',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+    final remaining = _quotaStatus?['remaining'];
+    final dailyLimit = _quotaStatus?['dailyLimit'];
+    final unlimited = dailyLimit == -1 || remaining == -1;
+    String? quotaHint;
+    if (tokenManager.isLoggedIn() && !_quotaLoading && _quotaStatus != null) {
+      if (unlimited) {
+        quotaHint = '会员不限次数';
+      } else if (remaining != null && dailyLimit != null) {
+        quotaHint = '今日剩余 $remaining / $dailyLimit 次';
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (quotaHint != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              quotaHint,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
+          ),
+        InkWell(
+          onTap: _submitting ? null : _submit,
+          child: Container(
+            width: double.infinity,
+            height: 50,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: _submitting
+                    ? [Colors.grey.shade400, Colors.grey.shade500]
+                    : const [Color(0xFFFFA726), Color(0xFFFF7043)],
+              ),
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.orange.withOpacity(_submitting ? 0.1 : 0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Center(
+              child: _submitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text(
+                      '开始生成专属方案',
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 

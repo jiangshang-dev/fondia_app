@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/api/interaction.dart';
+import 'package:fondia/api/member.dart';
 import 'package:fondia/api/user.dart';
 import 'package:fondia/l10n/app_localizations.dart';
+import 'package:fondia/models/member_models.dart';
 import 'package:fondia/models/user_profile.dart';
 import 'package:fondia/pages/Mine/BrowsingHistory.dart';
 import 'package:fondia/pages/Mine/Checkin.dart';
@@ -31,6 +33,7 @@ class _MineViewState extends State<MineView> {
   int _likeCount = 0;
   int _browseCount = 0;
   UserProfile? _profile;
+  MemberStatus? _memberStatus;
 
   @override
   void initState() {
@@ -42,9 +45,16 @@ class _MineViewState extends State<MineView> {
   Future<void> _loadProfile() async {
     if (!tokenManager.isLoggedIn()) return;
     try {
-      final profile = await UserApi.getProfile();
+      final results = await Future.wait([
+        UserApi.getProfile(),
+        MemberApi.getMemberStatus(),
+      ]);
       if (!mounted) return;
-      setState(() => _profile = profile);
+      final profile = results[0] as UserProfile;
+      setState(() {
+        _profile = profile;
+        _memberStatus = results[1] as MemberStatus;
+      });
       await tokenManager.saveUserInfo({
         ...profile.toUpdateJson(),
         'id': profile.id,
@@ -136,6 +146,7 @@ class _MineViewState extends State<MineView> {
     final l10n = context.l10n;
     final isLoggedIn = tokenManager.isLoggedIn();
     final profile = _profile;
+    final isMember = _memberStatus?.isMember == true;
     final avatarUrl = profile?.avatarUrl;
     final hasAvatar = avatarUrl != null;
 
@@ -166,15 +177,49 @@ class _MineViewState extends State<MineView> {
                   children: [
                     GestureDetector(
                       onTap: _navigateToUserInfo,
-                      child: CircleAvatar(
-                        radius: 35,
-                        backgroundColor: const Color(0xFFEEEEEE),
-                        backgroundImage:
-                            hasAvatar ? NetworkImage(avatarUrl!) : null,
-                        child: hasAvatar
-                            ? null
-                            : const Icon(Icons.person_outline,
-                                color: Colors.grey, size: 30),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(isMember ? 2 : 0),
+                            decoration: isMember
+                                ? BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFFFD54F), Color(0xFFFF7043)],
+                                    ),
+                                  )
+                                : null,
+                            child: CircleAvatar(
+                              radius: 35,
+                              backgroundColor: const Color(0xFFEEEEEE),
+                              backgroundImage:
+                                  hasAvatar ? NetworkImage(avatarUrl!) : null,
+                              child: hasAvatar
+                                  ? null
+                                  : const Icon(Icons.person_outline,
+                                      color: Colors.grey, size: 30),
+                            ),
+                          ),
+                          if (isMember)
+                            Positioned(
+                              right: -2,
+                              bottom: -2,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF7043),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 1.5),
+                                ),
+                                child: const Icon(
+                                  Icons.workspace_premium,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -212,6 +257,10 @@ class _MineViewState extends State<MineView> {
                                   ),
                                 ),
                               ),
+                              if (isMember) ...[
+                                const SizedBox(width: 6),
+                                _buildVipBadge(),
+                              ],
                             ],
                           ),
                           Text(
@@ -303,6 +352,33 @@ class _MineViewState extends State<MineView> {
                     ),
                   ],
                 ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVipBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFD54F), Color(0xFFFF7043)],
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.workspace_premium, size: 10, color: Colors.white),
+          SizedBox(width: 2),
+          Text(
+            'VIP',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );

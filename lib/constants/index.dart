@@ -89,6 +89,8 @@ class HttpConstants {
   static const String MEMBER_ADDRESS_DELETE = '/member/address/delete';
   static const String MEMBER_POINTS_TASK_COMPLETE = '/member/points/task/complete';
   static const String MEMBER_ORDER_PAY_CONFIRM = '/member/order/pay/confirm';
+  static const String MEMBER_AI_QUOTA_STATUS = '/member/ai-quota/status';
+  static const String MEMBER_AI_QUOTA_CONSUME = '/member/ai-quota/consume';
 
   // 支付
   static const String PAYMENT_CHANNELS = '/payment/channels';
