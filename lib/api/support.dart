@@ -1,3 +1,4 @@
+import 'package:fondia/models/ai_chat_models.dart';
 import 'package:fondia/constants/index.dart';
 import 'package:fondia/utils/sse_client.dart';
 import 'package:fondia/utils/DioRequest.dart';
@@ -130,8 +131,11 @@ class SupportApi {
     return Map<String, dynamic>.from(res ?? {});
   }
 
-  static Future<Map<String, dynamic>?> getActiveSession() async {
-    final res = await _http.get(HttpConstants.SUPPORT_SESSION_ACTIVE);
+  static Future<Map<String, dynamic>?> getActiveSession({String source = kCsGeneralSource}) async {
+    final res = await _http.get(
+      HttpConstants.SUPPORT_SESSION_ACTIVE,
+      params: {'source': source},
+    );
     if (res == null) return null;
     return Map<String, dynamic>.from(res);
   }

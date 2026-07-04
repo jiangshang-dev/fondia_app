@@ -91,3 +91,6 @@ class AiSessionSummary {
 
 /// AI Tab 会话来源标识，与后端 source 字段一致
 const String kAiTabSource = 'ai_tab';
+
+/// 在线客服会话来源（与 AI Tab 严格隔离）
+const String kCsGeneralSource = 'general';

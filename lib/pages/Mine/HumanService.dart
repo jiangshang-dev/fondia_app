@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:fondia/models/ai_chat_models.dart';
 import 'package:fondia/api/support.dart';
 import 'package:fondia/constants/index.dart';
 import 'package:fondia/l10n/app_localizations.dart';
@@ -63,7 +64,7 @@ class _HumanServiceViewState extends State<HumanServiceView> {
       if (widget.transferToHuman) {
         await _doTransfer();
       } else {
-        final active = await SupportApi.getActiveSession();
+        final active = await SupportApi.getActiveSession(source: kCsGeneralSource);
         if (active != null && (active['status'] == 'WAITING' || active['status'] == 'CHATTING')) {
           _sessionId = active['id']?.toString();
           _sessionStatus = active['status']?.toString() ?? 'WAITING';
@@ -130,7 +131,8 @@ class _HumanServiceViewState extends State<HumanServiceView> {
   }
 
   Future<void> _doTransfer() async {
-    final res = await SupportApi.transferToHuman(source: widget.source);
+    final csSource = widget.source ?? kCsGeneralSource;
+    final res = await SupportApi.transferToHuman(source: csSource);
     _sessionId = res['id']?.toString();
     _sessionStatus = res['status']?.toString() ?? 'WAITING';
     final greeting = res['humanGreeting']?.toString() ?? _humanGreeting;
@@ -157,7 +159,8 @@ class _HumanServiceViewState extends State<HumanServiceView> {
           'text': text,
         });
       });
-      final res = await SupportApi.aiChat(content: text, sessionId: _sessionId, source: widget.source);
+      final csSource = widget.source ?? kCsGeneralSource;
+      final res = await SupportApi.aiChat(content: text, sessionId: _sessionId, source: csSource);
       _sessionId = res['sessionId']?.toString() ?? _sessionId;
 
       if (res['transferred'] == true) {
