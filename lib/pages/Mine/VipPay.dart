@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/api/member.dart';
+import 'package:fondia/api/payment.dart';
 import 'package:fondia/models/member_models.dart';
 import 'package:fondia/models/user_profile.dart';
 import 'package:fondia/api/user.dart';
-import 'package:fondia/utils/platform_util.dart';
 
 class VipPayView extends StatefulWidget {
   const VipPayView({super.key});
@@ -12,10 +12,34 @@ class VipPayView extends StatefulWidget {
   State<VipPayView> createState() => _VipPayViewState();
 }
 
+class _PayChannelOption {
+  _PayChannelOption({
+    required this.code,
+    required this.name,
+    required this.subtitle,
+    required this.defaultSelected,
+  });
+
+  final String code;
+  final String name;
+  final String subtitle;
+  final bool defaultSelected;
+
+  factory _PayChannelOption.fromJson(Map<String, dynamic> json) {
+    return _PayChannelOption(
+      code: json['code']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      subtitle: json['subtitle']?.toString() ?? '',
+      defaultSelected: json['defaultSelected'] == true,
+    );
+  }
+}
+
 class _VipPayViewState extends State<VipPayView> {
   int _selectedPackageIndex = 0;
-  String _selectedPayMethod = 'alipay';
+  String _selectedPayMethod = 'ALIPAY';
   List<MemberPlan> _packages = [];
+  List<_PayChannelOption> _payChannels = [];
   MemberStatus? _memberStatus;
   UserProfile? _profile;
   bool _loading = true;
@@ -34,13 +58,23 @@ class _VipPayViewState extends State<VipPayView> {
         MemberApi.getPlans(),
         MemberApi.getMemberStatus(),
         UserApi.getProfile(),
+        PaymentApi.getChannels(),
       ]);
       if (!mounted) return;
+      final channelData = results[3] as Map<String, dynamic>;
+      final channels = (channelData['channels'] as List<dynamic>? ?? [])
+          .map((e) => _PayChannelOption.fromJson(Map<String, dynamic>.from(e)))
+          .where((e) => e.code.isNotEmpty)
+          .toList();
       setState(() {
         _packages = results[0] as List<MemberPlan>;
         _memberStatus = results[1] as MemberStatus;
         _profile = results[2] as UserProfile;
+        _payChannels = channels;
         if (_packages.isNotEmpty) _selectedPackageIndex = 0;
+        if (channels.isNotEmpty) {
+          _selectedPayMethod = channels.firstWhere((c) => c.defaultSelected, orElse: () => channels.first).code;
+        }
       });
     } catch (e) {
       if (mounted) {
@@ -53,17 +87,6 @@ class _VipPayViewState extends State<VipPayView> {
     }
   }
 
-  String _payChannelFromMethod(String method) {
-    switch (method) {
-      case 'apple':
-        return 'APPLE_IAP';
-      case 'google':
-        return 'GOOGLE_PLAY';
-      default:
-        return 'ALIPAY';
-    }
-  }
-
   Future<void> _pay() async {
     if (_packages.isEmpty || _paying) return;
     setState(() => _paying = true);
@@ -71,13 +94,30 @@ class _VipPayViewState extends State<VipPayView> {
       final plan = _packages[_selectedPackageIndex];
       final order = await MemberApi.createMemberOrder(
         planId: plan.id,
-        payChannel: _payChannelFromMethod(_selectedPayMethod),
+        payChannel: _selectedPayMethod,
       );
-      // 开发环境：模拟支付成功回调（生产环境由支付宝/IAP SDK 回调后调用）
-      await MemberApi.confirmMemberPay(order.orderNo);
+      final prepay = await PaymentApi.prepay(
+        orderNo: order.orderNo,
+        payChannel: _selectedPayMethod,
+      );
+
+      final mockPay = prepay['mockPay'] == true;
+      if (mockPay) {
+        await PaymentApi.verify(
+          orderNo: order.orderNo,
+          payChannel: _selectedPayMethod,
+        );
+      } else if (_selectedPayMethod == 'ALIPAY') {
+        // TODO: 调起支付宝 SDK（tobias），成功后由异步回调或客户端轮询确认
+        await _pollUntilPaid(order.orderNo);
+      } else {
+        // TODO: in_app_purchase 调起 Apple / Google 内购后提交 receipt
+        throw Exception('内购支付尚未接入，请开启 mock-enabled 或使用支付宝沙箱');
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('支付成功！订单 ${order.orderNo}，会员已开通并赠送积分')),
+        SnackBar(content: Text('支付成功！订单 ${order.orderNo}')),
       );
       Navigator.pop(context, true);
     } catch (e) {
@@ -91,12 +131,43 @@ class _VipPayViewState extends State<VipPayView> {
     }
   }
 
+  Future<void> _pollUntilPaid(String orderNo) async {
+    for (var i = 0; i < 30; i++) {
+      await Future.delayed(const Duration(seconds: 2));
+      final status = await PaymentApi.getOrderStatus(orderNo);
+      if (status['payStatus'] == 1) return;
+    }
+    throw Exception('支付结果确认超时，请稍后在会员中心查看');
+  }
+
   String get _expireText {
     final expire = _memberStatus?.subscription?.expireDate;
     if (expire != null) {
       return '${expire.year}-${expire.month.toString().padLeft(2, '0')}-${expire.day.toString().padLeft(2, '0')} 到期';
     }
     return '尚未开通';
+  }
+
+  IconData _iconForChannel(String code) {
+    switch (code) {
+      case 'APPLE_IAP':
+        return Icons.apple;
+      case 'GOOGLE_PLAY':
+        return Icons.shop_two;
+      default:
+        return Icons.account_balance_wallet;
+    }
+  }
+
+  Color _colorForChannel(String code) {
+    switch (code) {
+      case 'APPLE_IAP':
+        return Colors.black;
+      case 'GOOGLE_PLAY':
+        return Colors.blue;
+      default:
+        return const Color(0xff108ee9);
+    }
   }
 
   @override
@@ -152,7 +223,7 @@ class _VipPayViewState extends State<VipPayView> {
           Container(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
             child: const Icon(Icons.star, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 12),
@@ -165,7 +236,7 @@ class _VipPayViewState extends State<VipPayView> {
                   style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
-                Text(_expireText, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                Text(_expireText, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
               ],
             ),
           )
@@ -239,25 +310,22 @@ class _VipPayViewState extends State<VipPayView> {
   }
 
   Widget _buildPayMethods() {
-    final methods = <Map<String, dynamic>>[];
-    if (isAndroidPlatform) {
-      methods.add({'id': 'google', 'icon': Icons.shop_two, 'color': Colors.blue, 'title': 'Google Play', 'subtitle': 'Google Play 支付'});
+    if (_payChannels.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Text('暂无可用支付方式', style: TextStyle(color: Colors.grey)),
+      );
     }
-    if (isIOSPlatform) {
-      methods.add({'id': 'apple', 'icon': Icons.apple, 'color': Colors.black, 'title': 'Apple Pay', 'subtitle': 'App Store 内购'});
-    }
-    methods.add({'id': 'alipay', 'icon': Icons.account_balance_wallet, 'color': const Color(0xff108ee9), 'title': '支付宝', 'subtitle': isWebPlatform ? '网页支付宝支付' : '跳转支付宝客户端'});
- 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
       child: Column(
-        children: methods.asMap().entries.map((entry) {
-          final m = entry.value;
-          final isLast = entry.key == methods.length - 1;
+        children: _payChannels.asMap().entries.map((entry) {
+          final channel = entry.value;
+          final isLast = entry.key == _payChannels.length - 1;
           return Column(
             children: [
-              _buildPayTile(id: m['id'], icon: m['icon'], iconColor: m['color'], title: m['title'], subtitle: m['subtitle']),
+              _buildPayTile(channel: channel),
               if (!isLast) const Divider(height: 1, indent: 54),
             ],
           );
@@ -266,17 +334,17 @@ class _VipPayViewState extends State<VipPayView> {
     );
   }
 
-  Widget _buildPayTile({required String id, required IconData icon, required Color iconColor, required String title, required String subtitle}) {
-    final isSelected = _selectedPayMethod == id;
+  Widget _buildPayTile({required _PayChannelOption channel}) {
+    final isSelected = _selectedPayMethod == channel.code;
     return ListTile(
-      onTap: () => setState(() => _selectedPayMethod = id),
+      onTap: () => setState(() => _selectedPayMethod = channel.code),
       leading: Container(
         padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(color: iconColor.withOpacity(0.1), shape: BoxShape.circle),
-        child: Icon(icon, color: iconColor, size: 24),
+        decoration: BoxDecoration(color: _colorForChannel(channel.code).withValues(alpha: 0.1), shape: BoxShape.circle),
+        child: Icon(_iconForChannel(channel.code), color: _colorForChannel(channel.code), size: 24),
       ),
-      title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xff999999))),
+      title: Text(channel.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+      subtitle: Text(channel.subtitle, style: const TextStyle(fontSize: 11, color: Color(0xff999999))),
       trailing: Icon(isSelected ? Icons.check_circle : Icons.radio_button_off, color: isSelected ? const Color(0xfff16532) : const Color(0xffcccccc), size: 22),
     );
   }
@@ -291,7 +359,7 @@ class _VipPayViewState extends State<VipPayView> {
         padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: MediaQuery.of(context).padding.bottom + 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, -4))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, -4))],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -307,11 +375,11 @@ class _VipPayViewState extends State<VipPayView> {
               ],
             ),
             GestureDetector(
-              onTap: _packages.isEmpty || _paying ? null : _pay,
+              onTap: _packages.isEmpty || _paying || _payChannels.isEmpty ? null : _pay,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 12),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: _packages.isEmpty ? [Colors.grey, Colors.grey] : const [Color(0xfffca63c), Color(0xfff16532)]),
+                  gradient: LinearGradient(colors: _packages.isEmpty || _payChannels.isEmpty ? [Colors.grey, Colors.grey] : const [Color(0xfffca63c), Color(0xfff16532)]),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: _paying
