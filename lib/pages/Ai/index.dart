@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:fondia/api/cuisine.dart';
+import 'package:fondia/l10n/app_localizations.dart';
+import 'package:fondia/models/recipe_models.dart';
 import 'package:fondia/pages/Ai/AiExclusive.dart';
 import 'package:fondia/pages/AiChat/index.dart';
+import 'package:fondia/pages/CategoryDetail/DishDetail.dart';
+import 'package:fondia/utils/recipe_image.dart';
 
 class AiView extends StatefulWidget {
   const AiView({super.key});
@@ -10,8 +15,49 @@ class AiView extends StatefulWidget {
 }
 
 class _AiViewState extends State<AiView> {
+  List<RecipeListItem> _dailyRecipes = [];
+  bool _dailyLoading = false;
+  int _dailyPage = 1;
+  int _dailyTotalPages = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDailyRecommendations();
+  }
+
+  Future<void> _loadDailyRecommendations({bool refresh = false}) async {
+    if (_dailyLoading) return;
+    setState(() => _dailyLoading = true);
+    try {
+      var nextPage = _dailyPage;
+      if (refresh) {
+        nextPage = _dailyTotalPages <= 1 ? 1 : (_dailyPage >= _dailyTotalPages ? 1 : _dailyPage + 1);
+      }
+      final page = await CuisineApi.pageRecipes(pageNo: nextPage, pageSize: 8);
+      if (!mounted) return;
+      setState(() {
+        _dailyPage = page.current > 0 ? page.current : nextPage;
+        _dailyTotalPages = page.pages > 0 ? page.pages : 1;
+        _dailyRecipes = page.records;
+      });
+    } catch (_) {
+      // 静默失败，保留当前列表
+    } finally {
+      if (mounted) setState(() => _dailyLoading = false);
+    }
+  }
+
+  void _openRecipeDetail(String recipeId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => DishDetail(recipeId: recipeId)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SingleChildScrollView(
@@ -23,7 +69,16 @@ class _AiViewState extends State<AiView> {
             _buildSectionTitle("适用人群", showMore: true, icon: Icons.person_outline, iconColor: Colors.orange),
             _buildTargetAudiences(),
             _buildAIConsultCard(),
-            _buildSectionTitle("今日推荐", showMore: true, moreText: "换一换", moreIcon: Icons.refresh, icon: Icons.edit_note, iconColor: Colors.orange),
+            _buildSectionTitle(
+              l10n.todayRecommend,
+              showMore: true,
+              moreText: l10n.refresh,
+              moreIcon: Icons.refresh,
+              icon: Icons.edit_note,
+              iconColor: Colors.orange,
+              onMoreTap: () => _loadDailyRecommendations(refresh: true),
+              moreLoading: _dailyLoading,
+            ),
             _buildDailyRecommendations(),
             const SizedBox(height: 30),
           ],
@@ -106,7 +161,16 @@ class _AiViewState extends State<AiView> {
   }
 
   // 2. 通用标题组件
-  Widget _buildSectionTitle(String title, {bool showMore = false, String moreText = "全部功能", IconData? moreIcon, IconData? icon, Color? iconColor}) {
+  Widget _buildSectionTitle(
+    String title, {
+    bool showMore = false,
+    String moreText = "全部功能",
+    IconData? moreIcon,
+    IconData? icon,
+    Color? iconColor,
+    VoidCallback? onMoreTap,
+    bool moreLoading = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -116,11 +180,25 @@ class _AiViewState extends State<AiView> {
           Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const Spacer(),
           if (showMore)
-            Row(
-              children: [
-                Text(moreText, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                Icon(moreIcon ?? Icons.chevron_right, color: Colors.grey, size: 16),
-              ],
+            GestureDetector(
+              onTap: moreLoading ? null : onMoreTap,
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  Text(moreText, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                  if (moreLoading)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4),
+                      child: SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orange),
+                      ),
+                    )
+                  else
+                    Icon(moreIcon ?? Icons.chevron_right, color: Colors.grey, size: 16),
+                ],
+              ),
             ),
         ],
       ),
@@ -314,50 +392,107 @@ class _AiViewState extends State<AiView> {
 
   // 6. 今日推荐菜谱
   Widget _buildDailyRecommendations() {
-    final recipes = [
-      {"name": "低卡鸡胸蔬菜沙拉", "tags": ["减脂餐", "低卡高蛋白"], "img": ""},
-      {"name": "清炒虾仁西兰花", "tags": ["控糖餐", "低脂低糖"], "img": ""},
-      {"name": "山药枸杞炖鸡汤", "tags": ["孕妇餐", "营养滋补"], "img": ""},
-    ];
+    if (_dailyLoading && _dailyRecipes.isEmpty) {
+      return const SizedBox(
+        height: 180,
+        child: Center(child: CircularProgressIndicator(color: Colors.orange)),
+      );
+    }
+
+    if (_dailyRecipes.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          height: 120,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text('暂无推荐菜谱', style: TextStyle(color: Colors.grey, fontSize: 13)),
+        ),
+      );
+    }
 
     return SizedBox(
       height: 180,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         scrollDirection: Axis.horizontal,
-        itemCount: recipes.length,
+        itemCount: _dailyRecipes.length,
         itemBuilder: (context, index) {
-          final recipe = recipes[index];
-          return Container(
-            width: 140,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.network(recipe['img'] as String, height: 100, width: 140, fit: BoxFit.cover),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(recipe['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 4,
-                        children: (recipe['tags'] as List).map((tag) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                          decoration: BoxDecoration(color: Colors.blue.withOpacity(0.05), borderRadius: BorderRadius.circular(4)),
-                          child: Text(tag, style: const TextStyle(color: Colors.blue, fontSize: 8)),
-                        )).toList(),
-                      )
-                    ],
+          final recipe = _dailyRecipes[index];
+          final tags = recipe.tags.take(2).toList();
+          return GestureDetector(
+            onTap: () => _openRecipeDetail(recipe.id),
+            child: Container(
+              width: 140,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
-                )
-              ],
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    child: SizedBox(
+                      height: 100,
+                      width: 140,
+                      child: RecipeImage(
+                        url: recipe.coverImage,
+                        width: 140,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          recipe.title,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (tags.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 2,
+                            children: tags.map((tag) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  tag,
+                                  style: const TextStyle(color: Colors.blue, fontSize: 8),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
