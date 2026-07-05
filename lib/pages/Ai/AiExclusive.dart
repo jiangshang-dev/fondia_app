@@ -206,6 +206,11 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
     }
 
     try {
+      if (_sessionId == null) {
+        final created = await SupportApi.createAiSession(source: kAiTabSource);
+        _sessionId = created['id']?.toString();
+      }
+
       await SupportApi.aiChatStream(
         content: content,
         sessionId: _sessionId,
@@ -234,11 +239,18 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
       if (recipes.isEmpty && accumulator.text.isNotEmpty) {
         recipes = await matchRecipesFromText(accumulator.text);
       }
+      if (recipes.isEmpty && content.isNotEmpty) {
+        final fromQuery = await matchRecipesFromText(content);
+        if (fromQuery.isNotEmpty) {
+          recipes = fromQuery;
+        }
+      }
 
       if (mounted) {
-        final finalText = accumulator.text.isNotEmpty
+        final rawText = accumulator.text.isNotEmpty
             ? accumulator.text
             : (streamError.isNotEmpty ? streamError : '抱歉，AI 暂时无法回复，请稍后重试。');
+        final finalText = stripRecipeTags(rawText);
         setState(() {
           _messages[aiIndex] = _messages[aiIndex].copyWith(
             text: finalText,

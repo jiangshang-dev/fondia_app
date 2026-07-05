@@ -4,10 +4,11 @@ import 'package:fondia/models/recipe_models.dart';
 
 /// 从 AI 回复文本中提取可能的菜名并搜索 App 内菜谱（后端未返回 recipes 时的兜底）
 Future<List<AiRecipeCard>> matchRecipesFromText(String text) async {
-  final names = _extractCandidates(text);
-  final cards = <AiRecipeCard>[];
-  final seen = <String>{};
+  final tagCards = _extractRecipeTagCards(text);
+  final cards = <AiRecipeCard>[...tagCards];
+  final seen = cards.map((e) => e.id).toSet();
 
+  final names = _extractCandidates(text);
   for (final name in names) {
     if (cards.length >= 5) break;
     try {
@@ -17,6 +18,20 @@ Future<List<AiRecipeCard>> matchRecipesFromText(String text) async {
         cards.add(_toCard(match));
       }
     } catch (_) {}
+  }
+  return cards;
+}
+
+List<AiRecipeCard> _extractRecipeTagCards(String text) {
+  final cards = <AiRecipeCard>[];
+  final seen = <String>{};
+  final tagRe = RegExp(r'\[\[recipe:([^:\]]+):([^\]]+)\]\]');
+  for (final m in tagRe.allMatches(text)) {
+    final id = m.group(1)?.trim() ?? '';
+    final title = m.group(2)?.trim() ?? '';
+    if (id.isNotEmpty && seen.add(id)) {
+      cards.add(AiRecipeCard(id: id, title: title.isNotEmpty ? title : id));
+    }
   }
   return cards;
 }
@@ -88,4 +103,9 @@ List<AiRecipeCard> parseRecipeCards(dynamic raw) {
       .map((e) => AiRecipeCard.fromJson(Map<String, dynamic>.from(e as Map)))
       .where((e) => e.id.isNotEmpty)
       .toList();
+}
+
+/// 隐藏正文中的 [[recipe:id:title]] 标记，卡片单独展示
+String stripRecipeTags(String text) {
+  return text.replaceAll(RegExp(r'\[\[recipe:[^\]]+\]\]'), '').trim();
 }
