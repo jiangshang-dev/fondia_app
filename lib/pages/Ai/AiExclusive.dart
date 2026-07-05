@@ -219,11 +219,16 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
       final accumulator = AiStreamTextAccumulator();
       List<AiRecipeCard> recipes = [];
       var streamError = '';
+      var peakText = '';
 
       void updateAiBubble() {
         if (!mounted || aiIndex >= _messages.length) return;
+        final current = accumulator.text;
+        if (current.length >= peakText.length) {
+          peakText = current;
+        }
         _messages[aiIndex] = _messages[aiIndex].copyWith(
-          text: accumulator.text,
+          text: peakText,
           isStreaming: true,
         );
         setState(() {});
@@ -271,13 +276,22 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
       }
 
       if (mounted) {
+        final displayedDuringStream = peakText.isNotEmpty
+            ? peakText
+            : (aiIndex < _messages.length ? _messages[aiIndex].text : '');
         final rawText = accumulator.text.isNotEmpty
             ? accumulator.text
             : (streamError.isNotEmpty ? streamError : '抱歉，AI 暂时无法回复，请稍后重试。');
         final finalText = stripRecipeTags(rawText);
+        var safeText = finalText.isNotEmpty
+            ? finalText
+            : (rawText.isNotEmpty ? rawText : '抱歉，AI 暂时无法回复，请稍后重试。');
+        if (safeText.length < displayedDuringStream.length) {
+          safeText = displayedDuringStream;
+        }
         setState(() {
           _messages[aiIndex] = _messages[aiIndex].copyWith(
-            text: finalText,
+            text: safeText,
             recipes: recipes,
             isStreaming: false,
           );

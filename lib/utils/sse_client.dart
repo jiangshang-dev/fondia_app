@@ -73,30 +73,52 @@ void _emitPayload(String payload, AiSseCallback onEvent) {
   } catch (_) {}
 }
 
-/// 从 Airag SSE 事件累积展示文本（与 jeecgboot-vue3 chat.vue renderText 逻辑对齐）
+/// 从 Airag SSE 事件累积展示文本。
+/// 与 Support [CsAiServiceImpl.appendMessageFromEvent] 一致：MESSAGE 只追加，绝不重置。
+/// 勿照搬 Vue chat.vue 中「THINKING 后首条 MESSAGE 重置 text」逻辑，否则工具调用前已输出段落会被清掉。
 class AiStreamTextAccumulator {
   String text = '';
-  bool _thinking = false;
 
   void consume(Map<String, dynamic> event) {
     final eventType = event['event']?.toString() ?? '';
-    if (eventType == 'THINKING') {
-      _thinking = true;
-      return;
-    }
     if (eventType != 'MESSAGE') {
       return;
     }
-    final data = event['data'];
-    if (data is! Map) return;
-    final message = data['message']?.toString() ?? '';
-    if (message.isEmpty) return;
 
-    if (_thinking) {
-      text = message;
-      _thinking = false;
-    } else {
-      text += message;
+    final message = _readMessage(event);
+    if (message == null || message.isEmpty) return;
+
+    if (message.contains('::jeecgToolExec::') ||
+        message.contains('::card::') ||
+        message.contains('::cardConfig::')) {
+      return;
     }
+
+    text += message;
+  }
+
+  static String? _readMessage(Map<String, dynamic> event) {
+    final raw = event['data'];
+    dynamic data = raw;
+    if (raw is String) {
+      final trimmed = raw.trim();
+      if (trimmed.startsWith('{')) {
+        try {
+          final parsed = jsonDecode(trimmed);
+          if (parsed is Map) {
+            data = parsed;
+          }
+        } catch (_) {
+          return raw;
+        }
+      } else if (trimmed.isNotEmpty) {
+        return raw;
+      }
+    }
+    if (data is Map) {
+      final msg = data['message'] ?? data['content'];
+      return msg?.toString();
+    }
+    return null;
   }
 }
