@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/components/common/AiMarkdownBody.dart';
+import 'package:fondia/api/ai_quota.dart';
 import 'package:fondia/api/support.dart';
 import 'package:fondia/models/ai_chat_models.dart';
 import 'package:fondia/pages/Ai/AiChatHistory.dart';
 import 'package:fondia/pages/CategoryDetail/DishDetail.dart';
 import 'package:fondia/stores/TokenManager.dart';
+import 'package:fondia/utils/ai_quota_helper.dart';
 import 'package:fondia/utils/ai_recipe_parser.dart';
 import 'package:fondia/utils/DioRequest.dart';
 import 'package:fondia/utils/recipe_image.dart';
@@ -47,6 +49,7 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
   bool _loading = true;
   bool _sending = false;
   bool _showWelcome = true;
+  String _quotaHint = '';
 
   @override
   void initState() {
@@ -71,6 +74,8 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
     }
 
     try {
+      await _refreshQuotaStatus();
+
       if (widget.newSession) {
         final created = await SupportApi.createAiSession(source: kAiTabSource);
         _sessionId = created['id']?.toString();
@@ -123,6 +128,19 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
     );
   }
 
+  Future<void> _refreshQuotaStatus() async {
+    if (!tokenManager.isLoggedIn()) return;
+    try {
+      final status = await AiQuotaApi.getStatus();
+      if (!mounted) return;
+      setState(() {
+        _quotaHint = AiQuotaHelper.formatRemainingHint(status);
+      });
+    } catch (_) {
+      // 配额展示失败不阻塞聊天
+    }
+  }
+
   Future<void> _loadHistory() async {
     if (_sessionId == null) return;
     final list = await SupportApi.getMessages(_sessionId!);
@@ -167,45 +185,51 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
     final content = text.trim();
     if (content.isEmpty || _sending) return;
 
-    setState(() {
-      _sending = true;
-      _showWelcome = false;
-      _messages.add(AiChatMessage(
-        isUser: true,
-        text: content,
-        time: _formatTime(DateTime.now().millisecondsSinceEpoch),
-      ));
-    });
-    _inputController.clear();
-    _scrollToBottom();
-
-    late final int aiIndex;
-    setState(() {
-      _messages.add(AiChatMessage(
-        isUser: false,
-        text: '',
-        time: _formatTime(DateTime.now().millisecondsSinceEpoch),
-        isStreaming: true,
-      ));
-      aiIndex = _messages.length - 1;
-    });
-    _scrollToBottom();
-
-    final accumulator = AiStreamTextAccumulator();
-    List<AiRecipeCard> recipes = [];
-    var streamError = '';
-
-    void updateAiBubble() {
-      if (!mounted || aiIndex >= _messages.length) return;
-      _messages[aiIndex] = _messages[aiIndex].copyWith(
-        text: accumulator.text,
-        isStreaming: true,
-      );
-      setState(() {});
-      _scrollToBottom();
-    }
-
+    setState(() => _sending = true);
     try {
+      final status = await AiQuotaHelper.consumeWithDialog(context);
+      if (status == null) return;
+
+      if (mounted) {
+        setState(() {
+          _quotaHint = AiQuotaHelper.formatRemainingHint(status);
+          _showWelcome = false;
+          _messages.add(AiChatMessage(
+            isUser: true,
+            text: content,
+            time: _formatTime(DateTime.now().millisecondsSinceEpoch),
+          ));
+        });
+      }
+      _inputController.clear();
+      _scrollToBottom();
+
+      late final int aiIndex;
+      setState(() {
+        _messages.add(AiChatMessage(
+          isUser: false,
+          text: '',
+          time: _formatTime(DateTime.now().millisecondsSinceEpoch),
+          isStreaming: true,
+        ));
+        aiIndex = _messages.length - 1;
+      });
+      _scrollToBottom();
+
+      final accumulator = AiStreamTextAccumulator();
+      List<AiRecipeCard> recipes = [];
+      var streamError = '';
+
+      void updateAiBubble() {
+        if (!mounted || aiIndex >= _messages.length) return;
+        _messages[aiIndex] = _messages[aiIndex].copyWith(
+          text: accumulator.text,
+          isStreaming: true,
+        );
+        setState(() {});
+        _scrollToBottom();
+      }
+
       if (_sessionId == null) {
         final created = await SupportApi.createAiSession(source: kAiTabSource);
         _sessionId = created['id']?.toString();
@@ -262,22 +286,9 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
       }
     } catch (e) {
       if (mounted) {
-        final fallback = accumulator.text.isNotEmpty
-            ? accumulator.text
-            : '抱歉，AI 暂时无法回复，请稍后重试。';
-        setState(() {
-          if (aiIndex < _messages.length) {
-            _messages[aiIndex] = _messages[aiIndex].copyWith(
-              text: fallback,
-              isStreaming: false,
-            );
-          }
-        });
-        if (accumulator.text.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('发送失败：${dioErrorMessage(e)}')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('发送失败：${dioErrorMessage(e)}')),
+        );
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -354,9 +365,21 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
             icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Color(0xFF333333)),
             onPressed: () => Navigator.maybePop(context),
           ),
-          const Text(
-            'AI 助手',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'AI 助手',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                ),
+                if (_quotaHint.isNotEmpty)
+                  Text(
+                    _quotaHint,
+                    style: const TextStyle(fontSize: 11, color: Colors.orange),
+                  ),
+              ],
+            ),
           ),
           TextButton.icon(
             onPressed: () async {

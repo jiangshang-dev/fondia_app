@@ -1,10 +1,8 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fondia/api/ai_quota.dart';
 import 'package:fondia/pages/Ai/AiExclusive.dart';
-import 'package:fondia/pages/Mine/VIP.dart';
 import 'package:fondia/stores/TokenManager.dart';
-import 'package:fondia/utils/DioRequest.dart';
+import 'package:fondia/utils/ai_quota_helper.dart';
 
 class AiChatView extends StatefulWidget {
   const AiChatView({super.key, this.initialConsultType});
@@ -171,23 +169,7 @@ class _AiChatViewState extends State<AiChatView> {
   }
 
   void _showQuotaExceededDialog(String message) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('今日次数已用完'),
-        content: Text(message),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('知道了')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const VipView()));
-            },
-            child: const Text('开通会员'),
-          ),
-        ],
-      ),
-    );
+    AiQuotaHelper.showQuotaExceededDialog(context, message);
   }
 
   Future<void> _submit() async {
@@ -201,11 +183,16 @@ class _AiChatViewState extends State<AiChatView> {
     }
     if (_submitting) return;
 
+    // 提交前检查剩余次数（扣减在 AI 聊天页发送首条消息时进行）
+    if (_quotaStatus != null && _quotaStatus!['available'] == false) {
+      _showQuotaExceededDialog(
+        '今日免费次数已用完（每日 ${_quotaStatus!['dailyLimit'] ?? 2} 次），开通会员可享更多专属方案次数',
+      );
+      return;
+    }
+
     setState(() => _submitting = true);
     try {
-      final status = await AiQuotaApi.consume();
-      if (mounted) setState(() => _quotaStatus = status);
-
       final prompt = _buildPrompt();
       if (!mounted) return;
       Navigator.push(
@@ -217,15 +204,6 @@ class _AiChatViewState extends State<AiChatView> {
           ),
         ),
       );
-    } on DioException catch (e) {
-      final msg = e.message ?? '生成失败，请稍后重试';
-      if (msg.contains('次数') || msg.contains('用完')) {
-        _showQuotaExceededDialog(msg);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
