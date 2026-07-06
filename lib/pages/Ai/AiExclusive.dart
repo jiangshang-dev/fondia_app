@@ -152,8 +152,12 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
       if (sender != 'USER' && sender != 'AI') continue;
       final text = msg['content']?.toString() ?? '';
       List<AiRecipeCard> recipes = const [];
-      if (!isUser && text.isNotEmpty) {
-        recipes = await matchRecipesFromText(text);
+      if (!isUser) {
+        if (msg['recipes'] is List && (msg['recipes'] as List).isNotEmpty) {
+          recipes = parseRecipeCards(msg['recipes']);
+        } else if (text.isNotEmpty) {
+          recipes = await matchRecipesFromText(text);
+        }
       }
       messages.add(AiChatMessage(
         isUser: isUser,
