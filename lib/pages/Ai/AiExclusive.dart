@@ -336,10 +336,24 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
     });
   }
 
-  void _openRecipe(String recipeId) {
+  void _openRecipe(AiRecipeCard recipe) async {
+    var id = recipe.id;
+    if (!isValidRecipeId(id)) {
+      final resolved = await resolveRecipeId(id, title: recipe.title);
+      if (resolved == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('未找到该菜谱，请稍后再试')),
+          );
+        }
+        return;
+      }
+      id = resolved;
+    }
+    if (!mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => DishDetail(recipeId: recipeId)),
+      MaterialPageRoute(builder: (_) => DishDetail(recipeId: id)),
     );
   }
 
@@ -581,7 +595,7 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
 
   Widget _buildRecipeCard(AiRecipeCard recipe) {
     return GestureDetector(
-      onTap: () => _openRecipe(recipe.id),
+      onTap: () => _openRecipe(recipe),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(8),

@@ -2,9 +2,12 @@ import 'package:fondia/api/search.dart';
 import 'package:fondia/models/ai_chat_models.dart';
 import 'package:fondia/models/recipe_models.dart';
 
+/// 雪花 ID：纯数字
+bool isValidRecipeId(String id) => RegExp(r'^\d{10,20}$').hasMatch(id);
+
 /// 从 AI 回复文本中提取可能的菜名并搜索 App 内菜谱（后端未返回 recipes 时的兜底）
 Future<List<AiRecipeCard>> matchRecipesFromText(String text) async {
-  final tagCards = _extractRecipeTagCards(text);
+  final tagCards = await _extractRecipeTagCards(text);
   final cards = <AiRecipeCard>[...tagCards];
   final seen = cards.map((e) => e.id).toSet();
 
@@ -22,14 +25,30 @@ Future<List<AiRecipeCard>> matchRecipesFromText(String text) async {
   return cards;
 }
 
-List<AiRecipeCard> _extractRecipeTagCards(String text) {
+Future<List<AiRecipeCard>> _extractRecipeTagCards(String text) async {
   final cards = <AiRecipeCard>[];
   final seen = <String>{};
   final tagRe = RegExp(r'\[\[recipe:([^:\]]+):([^\]]+)\]\]');
   for (final m in tagRe.allMatches(text)) {
-    final id = m.group(1)?.trim() ?? '';
+    var id = m.group(1)?.trim() ?? '';
     final title = m.group(2)?.trim() ?? '';
-    if (id.isNotEmpty && seen.add(id)) {
+    if (id.isEmpty) continue;
+
+    if (!isValidRecipeId(id)) {
+      final keyword = title.isNotEmpty ? title : id;
+      try {
+        final page = await SearchApi.searchRecipes(keyword: keyword, pageSize: 3);
+        final match = _pickBestMatch(keyword, page.records);
+        if (match == null) continue;
+        id = match.id;
+        if (seen.add(id)) {
+          cards.add(_toCard(match));
+        }
+      } catch (_) {}
+      continue;
+    }
+
+    if (seen.add(id)) {
       cards.add(AiRecipeCard(id: id, title: title.isNotEmpty ? title : id));
     }
   }
@@ -101,8 +120,21 @@ List<AiRecipeCard> parseRecipeCards(dynamic raw) {
   if (raw is! List) return const [];
   return raw
       .map((e) => AiRecipeCard.fromJson(Map<String, dynamic>.from(e as Map)))
-      .where((e) => e.id.isNotEmpty)
+      .where((e) => e.id.isNotEmpty && isValidRecipeId(e.id))
       .toList();
+}
+
+/// 非数字 id 时按名称搜索解析真实菜谱 id
+Future<String?> resolveRecipeId(String recipeId, {String? title}) async {
+  if (isValidRecipeId(recipeId)) return recipeId;
+  final keyword = (title != null && title.isNotEmpty) ? title : recipeId;
+  try {
+    final page = await SearchApi.searchRecipes(keyword: keyword, pageSize: 3);
+    final match = _pickBestMatch(keyword, page.records);
+    return match?.id;
+  } catch (_) {
+    return null;
+  }
 }
 
 /// 隐藏正文中的 [[recipe:id:title]] 标记，卡片单独展示
