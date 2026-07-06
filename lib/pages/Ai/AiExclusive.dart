@@ -252,6 +252,18 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
             recipes = parseRecipeCards(event['recipes']);
             return;
           }
+          if (eventType == 'APP_LINK') {
+            final linkRecipes = parseRecipeCards(event['recipes']);
+            if (linkRecipes.isNotEmpty) {
+              recipes = linkRecipes;
+              if (mounted && aiIndex < _messages.length) {
+                setState(() {
+                  _messages[aiIndex] = _messages[aiIndex].copyWith(recipes: recipes);
+                });
+              }
+            }
+            return;
+          }
           if (eventType == 'APP_ERROR') {
             streamError = event['message']?.toString() ?? 'AI服务异常';
             return;

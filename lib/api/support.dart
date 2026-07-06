@@ -45,6 +45,11 @@ class SupportApi {
         if (eventType == 'APP_META') {
           resultSessionId = event['sessionId']?.toString() ?? resultSessionId;
           recipes = event['recipes'] is List ? event['recipes'] as List : [];
+        } else if (eventType == 'APP_LINK') {
+          final linkRecipes = event['recipes'];
+          if (linkRecipes is List && linkRecipes.isNotEmpty) {
+            recipes = linkRecipes;
+          }
         } else if (eventType == 'APP_TRANSFER') {
           transferred = true;
           resultSessionId = event['sessionId']?.toString() ?? resultSessionId;
