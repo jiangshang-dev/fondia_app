@@ -9,6 +9,15 @@ import 'sse_stream_fetcher.dart';
 
 typedef AiSseCallback = void Function(Map<String, dynamic> event);
 
+/// 网关转发 SSE 结束时常见的“半关闭”异常，视为正常结束。
+bool isBenignSseClose(Object error) {
+  final msg = error.toString();
+  return msg.contains('ClientConnection closed') ||
+      msg.contains('Connection closed while receiving') ||
+      msg.contains('Connection prematurely closed') ||
+      msg.contains('HttpException: Connection closed');
+}
+
 /// 与 JeecgBoot Airag SSE 协议一致的流式 POST 客户端
 Future<void> postSseStream({
   required String path,
@@ -27,8 +36,18 @@ Future<void> postSseStream({
   }
   request.body = jsonEncode(body);
 
-  final byteStream = await openSsePostStream(request).timeout(const Duration(minutes: 5));
-  await _consumeSseStream(byteStream, onEvent);
+  try {
+    final byteStream =
+        await openSsePostStream(request).timeout(const Duration(minutes: 5));
+    await _consumeSseStream(byteStream, onEvent);
+  } catch (e) {
+    // Spring Cloud Gateway 在上游 SseEmitter.complete() 后常会 RST 连接，
+    // Dart http 表现为 ClientConnection closed；正文已收完，按正常结束处理。
+    if (isBenignSseClose(e)) {
+      return;
+    }
+    rethrow;
+  }
 }
 
 Future<void> _consumeSseStream(

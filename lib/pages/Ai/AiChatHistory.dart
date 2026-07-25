@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fondia/api/support.dart';
+import 'package:fondia/api/ai.dart';
 import 'package:fondia/models/ai_chat_models.dart';
 import 'package:fondia/pages/Ai/AiExclusive.dart';
 import 'package:fondia/stores/TokenManager.dart';
@@ -28,7 +28,7 @@ class _AiChatHistoryViewState extends State<AiChatHistoryView> {
       return;
     }
     try {
-      final list = await SupportApi.listAiSessions();
+      final list = await AiApi.listSessions();
       if (mounted) {
         setState(() {
           _sessions = list

@@ -76,7 +76,7 @@ class SupportApi {
     };
   }
 
-  /// SSE 流式 AI 对话（与 Airag /airag/chat/send 事件协议一致，末尾追加 APP_META）
+  /// 客服页内嵌 AI 流式对话（转发 jeecg-agent /agent/ai/chat）
   static Future<void> aiChatStream({
     required String content,
     String? sessionId,
@@ -92,40 +92,6 @@ class SupportApi {
       },
       onEvent: onEvent,
     );
-  }
-
-  static Future<List<dynamic>> listAiSessions({
-    String source = 'ai_tab',
-    int pageNo = 1,
-    int pageSize = 20,
-  }) async {
-    final res = await _http.get(
-      HttpConstants.SUPPORT_AI_SESSIONS,
-      params: {
-        'source': source,
-        'pageNo': pageNo,
-        'pageSize': pageSize,
-      },
-    );
-    if (res is List) return res;
-    return [];
-  }
-
-  static Future<Map<String, dynamic>?> getActiveAiSession({String source = 'ai_tab'}) async {
-    final res = await _http.get(
-      HttpConstants.SUPPORT_AI_SESSION_ACTIVE,
-      params: {'source': source},
-    );
-    if (res == null) return null;
-    return Map<String, dynamic>.from(res);
-  }
-
-  static Future<Map<String, dynamic>> createAiSession({String source = 'ai_tab'}) async {
-    final res = await _http.post(
-      HttpConstants.SUPPORT_AI_SESSION_NEW,
-      params: {'source': source},
-    );
-    return Map<String, dynamic>.from(res ?? {});
   }
 
   static Future<Map<String, dynamic>> transferToHuman({String? source}) async {

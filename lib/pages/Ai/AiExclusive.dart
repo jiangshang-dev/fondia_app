@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fondia/components/common/AiMarkdownBody.dart';
 import 'package:fondia/api/ai_quota.dart';
-import 'package:fondia/api/support.dart';
+import 'package:fondia/api/ai.dart';
 import 'package:fondia/models/ai_chat_models.dart';
 import 'package:fondia/pages/Ai/AiChatHistory.dart';
 import 'package:fondia/pages/CategoryDetail/DishDetail.dart';
@@ -77,14 +77,14 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
       await _refreshQuotaStatus();
 
       if (widget.newSession) {
-        final created = await SupportApi.createAiSession(source: kAiTabSource);
+        final created = await AiApi.createSession(source: kAiTabSource);
         _sessionId = created['id']?.toString();
       } else if (widget.sessionId != null) {
         _sessionId = widget.sessionId;
         await _loadHistory();
         _showWelcome = _messages.isEmpty;
       } else {
-        final active = await SupportApi.getActiveAiSession(source: kAiTabSource);
+        final active = await AiApi.getActiveSession(source: kAiTabSource);
         _sessionId = active?['id']?.toString();
         if (_sessionId != null) {
           await _loadHistory();
@@ -143,7 +143,7 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
 
   Future<void> _loadHistory() async {
     if (_sessionId == null) return;
-    final list = await SupportApi.getMessages(_sessionId!);
+    final list = await AiApi.getMessages(_sessionId!);
     final messages = <AiChatMessage>[];
     for (final raw in list) {
       final msg = Map<String, dynamic>.from(raw);
@@ -240,11 +240,11 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
       }
 
       if (_sessionId == null) {
-        final created = await SupportApi.createAiSession(source: kAiTabSource);
+        final created = await AiApi.createSession(source: kAiTabSource);
         _sessionId = created['id']?.toString();
       }
 
-      await SupportApi.aiChatStream(
+      await AiApi.chatStream(
         content: content,
         sessionId: _sessionId,
         source: kAiTabSource,
@@ -315,7 +315,16 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
         _scrollToBottom();
       }
     } catch (e) {
-      if (mounted) {
+      final hasReply = mounted &&
+          _messages.isNotEmpty &&
+          !_messages.last.isUser &&
+          _messages.last.text.trim().isNotEmpty;
+      if (mounted && isBenignSseClose(e) && hasReply) {
+        setState(() {
+          final last = _messages.length - 1;
+          _messages[last] = _messages[last].copyWith(isStreaming: false);
+        });
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('发送失败：${dioErrorMessage(e)}')),
         );

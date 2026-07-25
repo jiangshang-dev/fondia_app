@@ -5,7 +5,7 @@
 class GlobalConstants {
   // static const String BASE_URL = 'http://192.168.1.37:9999';
   // static const String BASE_URL = 'http://192.168.18.198:9999';
-  static const String BASE_URL = 'http://192.168.18.188:9999';
+  static const String BASE_URL = 'http://192.168.124.2:9999';
   static const int TIME_OUT = 10;
   static const int SUCCESS_CODE = 200; // 成功
   static const String TOKEN_KEY = "hm_fondia_token"; // token持久化的key
@@ -55,19 +55,24 @@ class HttpConstants {
   static const String INTERACTION_BROWSE_MY = '/interaction/browse/my';
   static const String INTERACTION_BROWSE_RECORD = '/interaction/browse/record';
 
-  // 在线客服
+  // 在线客服（jeecg-support）
   static const String SUPPORT_CONFIG = '/support/config';
   static const String SUPPORT_FAQ_LIST = '/support/faq/list';
   static const String SUPPORT_QUICK_ENTRY_LIST = '/support/quick-entry/list';
-  static const String SUPPORT_AI_CHAT = '/support/ai/chat';
-  static const String SUPPORT_AI_SESSIONS = '/support/ai/sessions';
-  static const String SUPPORT_AI_SESSION_NEW = '/support/ai/session/new';
-  static const String SUPPORT_AI_SESSION_ACTIVE = '/support/ai/session/active';
   static const String SUPPORT_SESSION_TRANSFER = '/support/session/transfer';
   static const String SUPPORT_SESSION_ACTIVE = '/support/session/active';
   static const String SUPPORT_SESSION_MESSAGES = '/support/session';
   static const String SUPPORT_SESSION_CLOSE = '/support/session';
+  // 客服页内嵌 AI（仍走 AI 服务）
+  static const String SUPPORT_AI_CHAT = '/agent/ai/chat';
 
+  // AI 助手（网关 /agent/ai/** → jeecg-agent）
+  static const String AI_CHAT = '/agent/ai/chat';
+  static const String AI_CHAT_STOP = '/agent/ai/chat/stop';
+  static const String AI_SESSIONS = '/agent/ai/sessions';
+  static const String AI_SESSION_NEW = '/agent/ai/session/new';
+  static const String AI_SESSION_ACTIVE = '/agent/ai/session/active';
+  static const String AI_SESSION = '/agent/ai/session';
   // 搜索
   static const String SEARCH_RECIPE = '/search/recipe';
 
