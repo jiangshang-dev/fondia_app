@@ -37,8 +37,9 @@ Future<void> postSseStream({
   request.body = jsonEncode(body);
 
   try {
-    final byteStream =
-        await openSsePostStream(request).timeout(const Duration(minutes: 5));
+    final byteStream = await openSsePostStream(
+      request,
+    ).timeout(const Duration(minutes: 5));
     await _consumeSseStream(byteStream, onEvent);
   } catch (e) {
     // Spring Cloud Gateway 在上游 SseEmitter.complete() 后常会 RST 连接，
@@ -87,9 +88,50 @@ void _emitPayload(String payload, AiSseCallback onEvent) {
   try {
     final decoded = jsonDecode(payload);
     if (decoded is Map) {
-      onEvent(Map<String, dynamic>.from(decoded));
+      onEvent(_normalizeAiSseEvent(Map<String, dynamic>.from(decoded)));
     }
   } catch (_) {}
+}
+
+/// 兼容 AI 服务当前的 `type/data` 协议和历史的 `event` 协议。
+///
+/// 后端的文本增量形如：
+/// `{ "type": "message", "data": { "streamEvent": "answer_delta", "message": "..." } }`。
+/// 旧页面仅识别 `event: MESSAGE`，会把这些真正到达的增量丢掉，造成
+/// 「服务端已输出、页面一直显示光标」的现象。
+Map<String, dynamic> _normalizeAiSseEvent(Map<String, dynamic> event) {
+  if (event.containsKey('event')) return event;
+
+  final type = event['type']?.toString().toLowerCase();
+  switch (type) {
+    case 'message':
+      final data = event['data'];
+      final streamEvent = data is Map ? data['streamEvent']?.toString() : null;
+      if (streamEvent == 'ERROR') {
+        event['event'] = 'APP_ERROR';
+        event['message'] = data is Map ? data['message']?.toString() : null;
+      } else {
+        event['event'] = 'MESSAGE';
+      }
+      break;
+    case 'link':
+      event['event'] = 'APP_LINK';
+      break;
+    case 'error':
+      event['event'] = 'APP_ERROR';
+      event['message'] = event['data']?.toString();
+      break;
+    case 'end':
+      event['event'] = 'END';
+      break;
+    case 'thinking':
+      event['event'] = 'THINKING';
+      break;
+    case 'tool':
+      event['event'] = 'TOOL';
+      break;
+  }
+  return event;
 }
 
 /// 从 Airag SSE 事件累积展示文本。

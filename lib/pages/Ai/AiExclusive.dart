@@ -48,6 +48,7 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
   String? _sessionId;
   bool _loading = true;
   bool _sending = false;
+  bool _stopRequested = false;
   bool _showWelcome = true;
   String _quotaHint = '';
 
@@ -99,9 +100,9 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载失败：$e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('加载失败：$e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -115,7 +116,10 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
         title: const Text('需要登录'),
         content: const Text('使用 AI 助手需要先登录账号'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -159,12 +163,14 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
           recipes = await matchRecipesFromText(text);
         }
       }
-      messages.add(AiChatMessage(
-        isUser: isUser,
-        text: text,
-        time: _formatTime(msg['createTime']),
-        recipes: recipes,
-      ));
+      messages.add(
+        AiChatMessage(
+          isUser: isUser,
+          text: text,
+          time: _formatTime(msg['createTime']),
+          recipes: recipes,
+        ),
+      );
     }
     if (mounted) {
       setState(() {
@@ -189,7 +195,10 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
     final content = text.trim();
     if (content.isEmpty || _sending) return;
 
-    setState(() => _sending = true);
+    setState(() {
+      _sending = true;
+      _stopRequested = false;
+    });
     try {
       final status = await AiQuotaHelper.consumeWithDialog(context);
       if (status == null) return;
@@ -198,11 +207,13 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
         setState(() {
           _quotaHint = AiQuotaHelper.formatRemainingHint(status);
           _showWelcome = false;
-          _messages.add(AiChatMessage(
-            isUser: true,
-            text: content,
-            time: _formatTime(DateTime.now().millisecondsSinceEpoch),
-          ));
+          _messages.add(
+            AiChatMessage(
+              isUser: true,
+              text: content,
+              time: _formatTime(DateTime.now().millisecondsSinceEpoch),
+            ),
+          );
         });
       }
       _inputController.clear();
@@ -210,12 +221,17 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
 
       late final int aiIndex;
       setState(() {
-        _messages.add(AiChatMessage(
-          isUser: false,
-          text: '',
-          time: _formatTime(DateTime.now().millisecondsSinceEpoch),
-          isStreaming: true,
-        ));
+        _messages.add(
+          AiChatMessage(
+            isUser: false,
+            text: '',
+            time: _formatTime(DateTime.now().millisecondsSinceEpoch),
+            isStreaming: true,
+            thinkingSteps: const [
+              AiThinkingStep(title: '理解问题', content: '已接收问题，正在分析…'),
+            ],
+          ),
+        );
         aiIndex = _messages.length - 1;
       });
       _scrollToBottom();
@@ -239,6 +255,48 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
         _scrollToBottom();
       }
 
+      void upsertThinkingStep(String title, String content) {
+        if (!mounted || aiIndex >= _messages.length || content.trim().isEmpty) {
+          return;
+        }
+        final current = _messages[aiIndex];
+        final steps = List<AiThinkingStep>.from(current.thinkingSteps);
+        final existingIndex = steps.indexWhere((item) => item.title == title);
+        if (existingIndex >= 0) {
+          final old = steps[existingIndex];
+          if (old.content.endsWith(content) || old.content == content) return;
+          steps[existingIndex] = old.copyWith(
+            content: '${old.content}$content',
+          );
+        } else {
+          steps.add(AiThinkingStep(title: title, content: content));
+        }
+        setState(
+          () => _messages[aiIndex] = current.copyWith(thinkingSteps: steps),
+        );
+        _scrollToBottom();
+      }
+
+      void addThinkingDelta(String raw) {
+        final value = raw.trim();
+        if (value.isEmpty) return;
+        final markdownHeading = RegExp(
+          r'^#{1,6}\s+(.+?)(?:\n|$)',
+        ).firstMatch(value);
+        if (markdownHeading != null) {
+          final title = markdownHeading.group(1)!.trim();
+          final content = value.substring(markdownHeading.end).trimLeft();
+          upsertThinkingStep(title, content.isEmpty ? '正在整理…' : content);
+          return;
+        }
+        final match = RegExp(r'^\[([^\]]+)]\s*').firstMatch(value);
+        final title = match == null ? '推理分析' : match.group(1)!;
+        final content = match == null
+            ? value
+            : value.substring(match.end).trimLeft();
+        if (content.isNotEmpty) upsertThinkingStep(title, content);
+      }
+
       if (_sessionId == null) {
         final created = await AiApi.createSession(source: kAiTabSource);
         _sessionId = created['id']?.toString();
@@ -251,6 +309,26 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
         onEvent: (event) {
           final eventType = event['event']?.toString() ?? '';
 
+          if (eventType == 'THINKING' || eventType == 'TOOL') {
+            final data = event['data'];
+            if (eventType == 'THINKING') {
+              final raw = data is Map ? data['message'] : null;
+              if (raw != null) addThinkingDelta(raw.toString());
+            } else if (data is Map) {
+              final toolName = data['toolCallName']?.toString();
+              if (toolName != null && toolName.isNotEmpty) {
+                final status = data['streamEvent']?.toString();
+                final description = status == 'tool_result_end'
+                    ? '工具执行完成。'
+                    : status == 'tool_result_start'
+                    ? '正在执行工具。'
+                    : '准备调用工具。';
+                upsertThinkingStep('工具：$toolName', description);
+              }
+            }
+            return;
+          }
+
           if (eventType == 'APP_META') {
             _sessionId = event['sessionId']?.toString() ?? _sessionId;
             recipes = parseRecipeCards(event['recipes']);
@@ -262,7 +340,9 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
               recipes = linkRecipes;
               if (mounted && aiIndex < _messages.length) {
                 setState(() {
-                  _messages[aiIndex] = _messages[aiIndex].copyWith(recipes: recipes);
+                  _messages[aiIndex] = _messages[aiIndex].copyWith(
+                    recipes: recipes,
+                  );
                 });
               }
             }
@@ -277,6 +357,14 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
           }
 
           accumulator.consume(event);
+          if (eventType == 'MESSAGE' &&
+              accumulator.text.isNotEmpty &&
+              mounted) {
+            final current = _messages[aiIndex];
+            if (!current.thinkingComplete) {
+              _messages[aiIndex] = current.copyWith(thinkingComplete: true);
+            }
+          }
           updateAiBubble();
         },
       );
@@ -297,7 +385,9 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
             : (aiIndex < _messages.length ? _messages[aiIndex].text : '');
         final rawText = accumulator.text.isNotEmpty
             ? accumulator.text
-            : (streamError.isNotEmpty ? streamError : '抱歉，AI 暂时无法回复，请稍后重试。');
+            : (streamError.isNotEmpty
+                  ? streamError
+                  : (_stopRequested ? '已停止生成' : '抱歉，AI 暂时无法回复，请稍后重试。'));
         final finalText = stripRecipeTags(rawText);
         var safeText = finalText.isNotEmpty
             ? finalText
@@ -310,12 +400,14 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
             text: safeText,
             recipes: recipes,
             isStreaming: false,
+            thinkingComplete: true,
           );
         });
         _scrollToBottom();
       }
     } catch (e) {
-      final hasReply = mounted &&
+      final hasReply =
+          mounted &&
           _messages.isNotEmpty &&
           !_messages.last.isUser &&
           _messages.last.text.trim().isNotEmpty;
@@ -325,12 +417,28 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
           _messages[last] = _messages[last].copyWith(isStreaming: false);
         });
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('发送失败：${dioErrorMessage(e)}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('发送失败：${dioErrorMessage(e)}')));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _stopChat() async {
+    final sessionId = _sessionId;
+    if (!_sending || sessionId == null || sessionId.isEmpty) return;
+
+    setState(() => _stopRequested = true);
+    try {
+      await AiApi.stopChat(sessionId: sessionId);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _stopRequested = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('停止生成失败：${dioErrorMessage(e)}')));
     }
   }
 
@@ -351,9 +459,9 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
       final resolved = await resolveRecipeId(id, title: recipe.title);
       if (resolved == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('未找到该菜谱，请稍后再试')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('未找到该菜谱，请稍后再试')));
         }
         return;
       }
@@ -384,7 +492,9 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
               _buildAppBar(),
               Expanded(
                 child: _loading && _messages.isEmpty
-                    ? const Center(child: CircularProgressIndicator(color: Colors.orange))
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.orange),
+                      )
                     : ListView(
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -395,7 +505,10 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
                             const SizedBox(height: 16),
                             _buildSuggestionTags(),
                           ],
-                          ..._messages.map(_buildMessageItem),
+                          ..._messages.asMap().entries.map(
+                            (entry) =>
+                                _buildMessageItem(entry.value, entry.key),
+                          ),
                           const SizedBox(height: 16),
                         ],
                       ),
@@ -415,7 +528,11 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Color(0xFF333333)),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              size: 20,
+              color: Color(0xFF333333),
+            ),
             onPressed: () => Navigator.maybePop(context),
           ),
           Expanded(
@@ -424,7 +541,11 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
               children: [
                 const Text(
                   'AI 助手',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333),
+                  ),
                 ),
                 if (_quotaHint.isNotEmpty)
                   Text(
@@ -442,7 +563,10 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
               );
             },
             icon: const Icon(Icons.history, size: 16, color: Color(0xFF666666)),
-            label: const Text('对话记录', style: TextStyle(color: Color(0xFF666666), fontSize: 13)),
+            label: const Text(
+              '对话记录',
+              style: TextStyle(color: Color(0xFF666666), fontSize: 13),
+            ),
           ),
         ],
       ),
@@ -460,9 +584,13 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
             color: const Color(0xFFF0F0F0),
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 2),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)],
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5),
+            ],
           ),
-          child: const Center(child: Text('🤖', style: TextStyle(fontSize: 28))),
+          child: const Center(
+            child: Text('🤖', style: TextStyle(fontSize: 28)),
+          ),
         ),
         const SizedBox(width: 12),
         const Expanded(
@@ -473,7 +601,11 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
                 children: [
                   Text(
                     'Hi，我是你的 AI 营养师',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF333333),
+                    ),
                   ),
                   SizedBox(width: 4),
                   Text('👋', style: TextStyle(fontSize: 16)),
@@ -528,7 +660,7 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
     );
   }
 
-  Widget _buildMessageItem(AiChatMessage msg) {
+  Widget _buildMessageItem(AiChatMessage msg, int messageIndex) {
     if (msg.isUser) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 16),
@@ -537,7 +669,10 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
           children: [
             Flexible(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: const BoxDecoration(
                   color: Color(0xFFFFE6D5),
                   borderRadius: BorderRadius.only(
@@ -548,7 +683,11 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
                 ),
                 child: Text(
                   msg.text,
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF6B3A1A), height: 1.4),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6B3A1A),
+                    height: 1.4,
+                  ),
                 ),
               ),
             ),
@@ -565,8 +704,13 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
           Container(
             width: 32,
             height: 32,
-            decoration: const BoxDecoration(color: Color(0xFFEAEAEA), shape: BoxShape.circle),
-            child: const Center(child: Text('🤖', style: TextStyle(fontSize: 18))),
+            decoration: const BoxDecoration(
+              color: Color(0xFFEAEAEA),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Text('🤖', style: TextStyle(fontSize: 18)),
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -580,10 +724,11 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AiMarkdownBody(
-                    data: msg.text,
-                    showCursor: msg.isStreaming,
-                  ),
+                  if (msg.thinkingSteps.isNotEmpty) ...[
+                    _buildThinkingPanel(msg, messageIndex),
+                    const SizedBox(height: 10),
+                  ],
+                  AiMarkdownBody(data: msg.text, showCursor: msg.isStreaming),
                   if (msg.recipes.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     ...msg.recipes.map(_buildRecipeCard),
@@ -597,6 +742,97 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThinkingPanel(AiChatMessage msg, int messageIndex) {
+    final title = msg.thinkingComplete ? '已完成思考' : '正在思考';
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6EF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFFE5D2)),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => setState(() {
+              _messages[messageIndex] = msg.copyWith(
+                thinkingExpanded: !msg.thinkingExpanded,
+              );
+            }),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    msg.thinkingComplete
+                        ? Icons.check_circle_outline
+                        : Icons.psychology_outlined,
+                    color: const Color(0xFFFF8A45),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF8A552F),
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    msg.thinkingExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: const Color(0xFF9A7A64),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (msg.thinkingExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < msg.thinkingSteps.length; i++)
+                    _buildThinkingStep(msg.thinkingSteps[i], i + 1),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThinkingStep(AiThinkingStep step, int index) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.56),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$index. ${step.title}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF795E4B),
+            ),
+          ),
+          const SizedBox(height: 4),
+          AiMarkdownBody(data: step.content),
         ],
       ),
     );
@@ -628,13 +864,20 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
                 children: [
                   Text(
                     recipe.title,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF333333),
+                    ),
                   ),
                   if (recipe.infoText.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
                       recipe.infoText,
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF999999)),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF999999),
+                      ),
                     ),
                   ],
                 ],
@@ -658,8 +901,16 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildBottomQuickButton(Icons.refresh, '换一批', '请再推荐一批不同的菜谱'),
-              _buildBottomQuickButton(Icons.assignment, '详细做法', '请给出上面推荐菜谱的详细做法步骤'),
-              _buildBottomQuickButton(Icons.swap_horiz, '食材替换', '如果缺少某种食材，可以用什么替换？'),
+              _buildBottomQuickButton(
+                Icons.assignment,
+                '详细做法',
+                '请给出上面推荐菜谱的详细做法步骤',
+              ),
+              _buildBottomQuickButton(
+                Icons.swap_horiz,
+                '食材替换',
+                '如果缺少某种食材，可以用什么替换？',
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -678,7 +929,10 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
                     enabled: !_sending,
                     decoration: const InputDecoration(
                       hintText: '输入你的问题...',
-                      hintStyle: TextStyle(color: Color(0xFFBBBBBB), fontSize: 14),
+                      hintStyle: TextStyle(
+                        color: Color(0xFFBBBBBB),
+                        fontSize: 14,
+                      ),
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
@@ -692,7 +946,9 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: _sending ? null : () => _sendMessage(_inputController.text),
+                  onTap: _sending
+                      ? _stopChat
+                      : () => _sendMessage(_inputController.text),
                   customBorder: const CircleBorder(),
                   child: Ink(
                     width: 44,
@@ -706,9 +962,10 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
                       shape: BoxShape.circle,
                     ),
                     child: _sending
-                        ? const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        ? Icon(
+                            _stopRequested ? Icons.hourglass_top : Icons.stop,
+                            color: Colors.white,
+                            size: 20,
                           )
                         : const Icon(Icons.send, color: Colors.white, size: 18),
                   ),
@@ -731,14 +988,21 @@ class _AiExclusiveViewState extends State<AiExclusiveView> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0xFFE8E8E8)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Row(
           children: [
             Icon(icon, size: 14, color: const Color(0xFF666666)),
             const SizedBox(width: 4),
-            Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF555555))),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF555555)),
+            ),
           ],
         ),
       ),

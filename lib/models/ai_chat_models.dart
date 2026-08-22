@@ -43,6 +43,9 @@ class AiChatMessage {
   final String? time;
   final List<AiRecipeCard> recipes;
   final bool isStreaming;
+  final List<AiThinkingStep> thinkingSteps;
+  final bool thinkingComplete;
+  final bool thinkingExpanded;
 
   AiChatMessage({
     required this.isUser,
@@ -50,12 +53,18 @@ class AiChatMessage {
     this.time,
     this.recipes = const [],
     this.isStreaming = false,
+    this.thinkingSteps = const [],
+    this.thinkingComplete = false,
+    this.thinkingExpanded = false,
   });
 
   AiChatMessage copyWith({
     String? text,
     List<AiRecipeCard>? recipes,
     bool? isStreaming,
+    List<AiThinkingStep>? thinkingSteps,
+    bool? thinkingComplete,
+    bool? thinkingExpanded,
   }) {
     return AiChatMessage(
       isUser: isUser,
@@ -63,8 +72,24 @@ class AiChatMessage {
       time: time,
       recipes: recipes ?? this.recipes,
       isStreaming: isStreaming ?? this.isStreaming,
+      thinkingSteps: thinkingSteps ?? this.thinkingSteps,
+      thinkingComplete: thinkingComplete ?? this.thinkingComplete,
+      thinkingExpanded: thinkingExpanded ?? this.thinkingExpanded,
     );
   }
+}
+
+/// 一条可展开的推理步骤。标题用于概览，正文支持 Markdown。
+class AiThinkingStep {
+  final String title;
+  final String content;
+
+  const AiThinkingStep({required this.title, required this.content});
+
+  AiThinkingStep copyWith({String? title, String? content}) => AiThinkingStep(
+    title: title ?? this.title,
+    content: content ?? this.content,
+  );
 }
 
 class AiSessionSummary {
@@ -72,11 +97,7 @@ class AiSessionSummary {
   final String? lastMessage;
   final int? lastMessageTime;
 
-  AiSessionSummary({
-    required this.id,
-    this.lastMessage,
-    this.lastMessageTime,
-  });
+  AiSessionSummary({required this.id, this.lastMessage, this.lastMessageTime});
 
   factory AiSessionSummary.fromJson(Map<String, dynamic> json) {
     return AiSessionSummary(
