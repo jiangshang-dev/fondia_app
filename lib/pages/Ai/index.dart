@@ -268,10 +268,10 @@ class _AiViewState extends State<AiView> {
   // 4. 适用人群
   Widget _buildTargetAudiences() {
     final groups = [
-      {"title": "孕妇营养", "sub": "孕期分阶段\n营养饮食方案", "img": "https://via.placeholder.com/150"},
-      {"title": "儿童辅食", "sub": "分龄辅食添加\n营养均衡成长", "img": "https://via.placeholder.com/150"},
-      {"title": "老人养生", "sub": "营养易消化\n增强免疫力", "img": "https://via.placeholder.com/150"},
-      {"title": "全家健康", "sub": "多成员管理\n定制全家饮食", "img": "https://via.placeholder.com/150"},
+      {"title": "孕妇营养", "sub": "孕期分阶段\n营养饮食方案", "img": "lib/assets/audience_pregnancy_nutrition.png"},
+      {"title": "儿童辅食", "sub": "分龄辅食添加\n营养均衡成长", "img": "lib/assets/audience_children_meals.png"},
+      {"title": "老人养生", "sub": "营养易消化\n增强免疫力", "img": "lib/assets/audience_senior_wellness.png"},
+      {"title": "全家健康", "sub": "多成员管理\n定制全家饮食", "img": "lib/assets/audience_family_health.png"},
     ];
 
     return GridView.builder(
@@ -294,7 +294,7 @@ class _AiViewState extends State<AiView> {
               Expanded(
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.network(groups[index]['img']!, fit: BoxFit.cover, width: double.infinity),
+                  child: Image.asset(groups[index]['img']!, fit: BoxFit.cover, width: double.infinity),
                 ),
               ),
               Padding(

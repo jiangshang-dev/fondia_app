@@ -5,7 +5,7 @@
 class GlobalConstants {
   // static const String BASE_URL = 'http://192.168.1.37:9999';
   // static const String BASE_URL = 'http://192.168.18.198:9999';
-  static const String BASE_URL = 'http://192.168.124.2:9999';
+  static const String BASE_URL = 'http://192.168.3.4:9999';
   static const int TIME_OUT = 10;
   static const int SUCCESS_CODE = 200; // 成功
   static const String TOKEN_KEY = "hm_fondia_token"; // token持久化的key
