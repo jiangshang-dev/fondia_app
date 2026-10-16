@@ -59,10 +59,11 @@ Fondia（饭典）App 是「菜谱浏览 + AI 厨伴 + 会员积分」的移动�
 
 ## 相关仓库
 
-| 仓库 | 地址 | 内容 |
-|------|------|------|
-| 后端 | [jiangshang-dev/fondia](https://github.com/jiangshang-dev/fondia) | JeecgBoot 微服务、网关、管理端、库表 |
-| App | [jiangshang-dev/fondia_app](https://github.com/jiangshang-dev/fondia_app) | 本仓库，Flutter 客户端 |
+| 仓库 | 地址                                                                            | 内容                      |
+|----|-------------------------------------------------------------------------------|-------------------------|
+| 后端 | [jiangshang-dev/fondia](https://github.com/jiangshang-dev/fondia)             | JeecgBoot 微服务、网关、管理端、库表 |
+| 前端 | [jiangshang-dev/fondia-views](https://github.com/jiangshang-dev/fondia-views) | 管理后台前端 Vue3、TypeScript  |
+| App | [jiangshang-dev/fondia_app](https://github.com/jiangshang-dev/fondia_app)     | 本仓库，Flutter 客户端         |
 
 ## 功能
 
